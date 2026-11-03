@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="A Three.js miniature diorama of the silver tree fountain in Möngke Khan’s palace at Karakorum, reconstructed from William of Rubruck’s 1254 eyewitness account.">
+<title>Karakorum Silver Tree</title>
+<style>
+  :root { --ink:#efe6d2; --mute:#a99b80; --gold:#e3b54a; --line:rgba(227,181,74,.24); --glass:rgba(22,16,12,.78);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif; --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+    --edge:28px; --top:24px; --bottom:22px; }
+  html,body { margin:0; height:100%; color:var(--ink); font:14px/1.55 var(--sans); overflow:hidden; }
+  @font-face { font-family:"Onon Sonin Sans"; src:url(fonts/zg.ttf) format("truetype"); font-display:swap; }
+  html { background:#15110e radial-gradient(ellipse at 50% 40%, #241b14 0%, #120e0b 75%) fixed; }
+  .sky { position:fixed; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
+
+  canvas { display:block; width:100vw; height:100vh; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+  button { font:inherit; color:var(--ink); cursor:pointer; }
+  button:focus-visible, summary:focus-visible, a:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+
+  /* title */
+  .title { position:fixed; top:var(--top); left:var(--edge); max-width:min(420px,calc(100vw - 120px)); pointer-events:none; text-shadow:0 2px 14px rgba(0,0,0,.65); }
+  .eyebrow { margin:0; font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); }
+  .title h1 { margin:4px 0 6px; font:400 clamp(28px,4vw,42px)/1.05 var(--serif); letter-spacing:-.01em; }
+  .sub { margin:0; color:var(--mute); font:italic 15px/1.4 var(--serif); }
+
+  /* compact notes control: icon + short label, icon only on phones */
+  #toggle { position:fixed; top:var(--top); right:var(--edge); display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 13px 0 10px;
+    font-size:13px; background:var(--glass); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid var(--line); border-radius:999px; transition:border-color .15s, background .15s; }
+  #toggle:hover { border-color:var(--gold); background:rgba(40,29,20,.9); }
+  #toggle svg { width:16px; height:16px; flex:none; stroke:var(--gold); }
+
+  /* drawer and scrim */
+  #scrim { position:fixed; inset:0; background:rgba(8,6,4,.45); opacity:0; pointer-events:none; transition:opacity .25s; z-index:2; }
+  #scrim.open { opacity:1; pointer-events:auto; }
+  #notes { position:fixed; top:0; right:0; bottom:0; width:min(400px,100vw); overflow:auto; box-sizing:border-box; padding:20px 24px 28px;
+    background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-left:1px solid var(--line); z-index:3;
+    transform:translateX(100%); visibility:hidden; transition:transform .3s ease, visibility 0s .3s; }
+  #notes.open { transform:none; visibility:visible; transition:transform .3s ease; }
+  .drawer-head { position:sticky; top:-20px; display:flex; justify-content:space-between; align-items:center; margin:-20px -24px 6px; padding:20px 24px 10px; background:linear-gradient(rgba(22,16,12,.95) 70%, transparent); }
+  .drawer-head h2, #notes h2 { margin:14px 0 6px; font:400 20px/1.2 var(--serif); color:var(--gold); }
+  .drawer-head h2 { margin:0; }
+  #close { width:32px; height:32px; padding:0; font-size:18px; line-height:1; background:transparent; border:1px solid var(--line); border-radius:50%; }
+  #close:hover { border-color:var(--gold); }
+  .legend { margin:0 0 10px; }
+  .tag { display:inline-block; font-size:11px; padding:1px 8px; border:1px solid var(--line); border-radius:999px; }
+  #notes details { border-top:1px solid var(--line); padding:8px 0; }
+  #notes summary { cursor:pointer; font:15px/1.4 var(--serif); color:var(--ink); list-style:none; }
+  #notes summary::-webkit-details-marker { display:none; }
+  #notes summary::before { content:"+"; display:inline-block; width:16px; color:var(--gold); }
+  #notes details[open] summary::before { content:"–"; }
+  #notes ul { padding-left:18px; margin:6px 0 0; }
+  #notes li { margin:4px 0; font-size:13px; }
+  .inf { color:var(--mute); }
+  a { color:#c9b37c; }
+
+  /* caption: step counter, text, progress through the loop */
+  .caption { position:fixed; left:50%; bottom:var(--bottom); transform:translateX(-50%); width:min(560px,calc(100vw - 32px)); box-sizing:border-box;
+    background:var(--glass); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  #step { margin:10px 18px 0; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); text-align:center; }
+  #cap { margin:2px 0 0; padding:0 18px 11px; min-height:2.9em; text-align:center; font:italic 15px/1.45 var(--serif); display:flex; align-items:center; justify-content:center; }
+  #progress { height:2px; background:rgba(255,255,255,.07); }
+  #progress i { display:block; height:100%; width:0; background:var(--gold); }
+  .hint { position:fixed; left:var(--edge); bottom:calc(var(--bottom) + 4px); margin:0; font-size:12px; color:var(--mute); }
+  #ha { position:fixed; display:none; transform:translate(-50%,-100%); background:#f4ecd8; color:#2a1d14; border-radius:8px;
+    padding:2px 10px; font:700 15px var(--serif); pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,.4); }
+
+  /* first-load cover: shown until the first frame is drawn */
+  #loader { position:fixed; inset:0; display:grid; place-content:center; justify-items:center; gap:14px; background:#15110e; z-index:4; transition:opacity .6s ease; }
+  #loader.done { opacity:0; pointer-events:none; }
+  #loader p { margin:0; color:var(--mute); font:italic 15px var(--serif); }
+  .dots { display:flex; gap:7px; } .dots i { width:7px; height:7px; border-radius:50%; background:var(--gold); animation:pulse 1.2s ease-in-out infinite; }
+  .dots i:nth-child(2) { animation-delay:.15s; } .dots i:nth-child(3) { animation-delay:.3s; }
+  @keyframes pulse { 0%,100% { opacity:.25; transform:scale(.8); } 50% { opacity:1; transform:scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .dots i { animation:none; opacity:.8; } #notes, #scrim, #loader { transition:none; } }
+
+  @media (max-width:760px) {
+    :root { --edge:16px; --top:calc(14px + env(safe-area-inset-top)); --bottom:calc(12px + env(safe-area-inset-bottom)); }
+    .sub, .hint { display:none; }
+    .title h1 { font-size:30px; }
+    #toggle { width:40px; height:40px; padding:0; justify-content:center; }
+    #toggle span { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+    #cap { font-size:14px; }
+    #notes { width:100vw; border-left:0; padding-top:calc(20px + env(safe-area-inset-top)); padding-bottom:calc(28px + env(safe-area-inset-bottom)); }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" href="fonts/OnonSoninSans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js">
+</head>
+<body>
+<header class="title">
+  <p class="eyebrow">Karakorum · 1254</p>
+  <h1>The Silver Tree</h1>
+  <p class="sub">In Möngke Khan’s palace, after the eyewitness account of William of Rubruck</p>
+</header>
+<button id="toggle" aria-expanded="false" aria-controls="notes" aria-label="Notes and sources">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg>
+  <span>Notes</span>
+</button>
+<div id="scrim"></div>
+<aside id="notes" aria-label="Notes and sources" inert>
+  <div class="drawer-head"><h2>Notes &amp; sources</h2><button id="close" aria-label="Close notes">×</button></div>
+  <p class="legend"><span class="tag">From the sources</span> <span class="tag inf">Inferred</span></p>
+
+  <details open><summary>The tree (all from Rubruck’s text)</summary>
+  <ul>
+    <li>A great silver tree made for Möngke by the Parisian goldsmith William (Guillaume Boucher), set inside the entrance of the palace</li>
+    <li>At its roots, four silver lions, each with a conduit through it, spouting white mare’s milk</li>
+    <li>Four conduits run inside the tree to its top, their ends bent downward</li>
+    <li>On each conduit a gilded serpent whose tail twines round the trunk</li>
+    <li>The four conduits pour wine, cara cosmos (clarified mare’s milk), bal (honey mead) and terracina (rice wine)</li>
+    <li>Each drink has its own silver bowl at the foot of the tree</li>
+    <li>Between the four conduits at the top stands an angel holding a trumpet</li>
+    <li>Under the tree is a vault where a man can hide; pipes run up through the heart of the tree to the angel</li>
+    <li>The tree has silver branches, leaves and fruit</li>
+    <li>Sequence: the head butler calls → the man in the vault blows into the pipe → the angel raises the trumpet and sounds it → servants in the cellar outside pour the drinks into their conduits → the drinks flow into the bowls → the butlers carry them to the men and women</li>
+  </ul></details>
+  <details><summary>The hall (text + archaeology)</summary>
+  <ul>
+    <li>The palace is “like a church”: a central nave with two aisles beyond two rows of pillars</li>
+    <li>Three doors on the south; the tree stands just inside the middle door (walls and doors are not shown; the door-keepers stand where the side doors were)</li>
+    <li>The Khan sits on a high place to the north, reached by two flights of steps: the cup-bearer goes up one and comes down the other</li>
+    <li>The space between the tree and the steps is left empty for the cup-bearer and envoys</li>
+    <li>Men sit on the Khan’s right (west), women on his left (east); on the south side by the pillars are raised platform seats — sons and brothers to the west, wives and daughters to the east</li>
+    <li>Only one woman sits up beside him, though not as high</li>
+    <li>Floor: green-glazed square tiles, granite column bases and remains of wooden columns, per the photo captions of the Mongolian-German excavation of the “Great Hall”. <span class="inf">“Green glaze in the centre, grey unglazed tiles at the margins” comes from a search summary quoting a DAI publication that I could not open to verify; matching it to nave and aisles is my reading; tile colours are estimates</span></li>
+  </ul></details>
+  <details><summary>Inferences and unsupported choices</summary>
+  <ul class="inf">
+    <li>The text gives no sizes, proportions or number of branches and leaves; these are set for legibility</li>
+    <li>Materials: the lions and bowls are silver in the text; the angel’s material is not stated and is shown as silver</li>
+    <li>Rubruck’s lions spout mare’s milk; here they are shown seated and without the milk streams, a deliberate simplification. Their seated pose is not stated in the text</li>
+    <li>The angel’s form — standing in a long robe on a finial, wings raised, the trumpet lifted to the lips — follows later illustrations of the tree, not the text</li>
+    <li>The stone plinth under the tree and the vault hatch are schematic</li>
+    <li>Wooden columns are attested, but whether or how they were painted is not; plain wood is used. Walls, doors and roof are omitted for visibility</li>
+    <li>The excavated “Great Hall” is now identified as a Buddhist temple, not the palace, whose site is still uncertain; only its floor tiles and column bases are borrowed as a contemporary reference</li>
+    <li>The lions’ stance, serpent heads, leaf and fruit shapes and the bowl forms are schematic; the text does not describe them</li>
+    <li>All ornament is invented in the manner of medieval silverwork: chased scales on the trunk, beaded collars and rims, the petal skirt, leaf veins, serpent scales, the lions’ manes, the angel’s curls, robe folds and feathers. Rubruck names the parts of the tree, not their decoration</li>
+    <li>Figure proportions, faces and colours are schematic</li>
+  </ul></details>
+  <details><summary>Sources for the figures</summary>
+  <ul>
+    <li><b>Möngke Khan</b>: seated on a couch, dressed in a skin “spotted and glossy, like a seal’s skin”; Rubruck calls him a man of medium height, about 45 years old</li>
+    <li><b>Mongol men’s hair</b>: a square shaved on the crown, a tuft left falling to the eyebrows, the side hair plaited to the ears; robes fasten on the right</li>
+    <li><b>The one woman beside the Khan</b>: wears a bocca — made of bark, a cubit or more high, square like the capital of a column, covered in costly silk, topped with quills and decorated with peacock and mallard feathers and precious stones</li>
+    <li><b>Cup-bearer</b>: goes up one flight of steps with the cup and comes down the other; otherwise stands with the envoys in the space between the tree and the steps</li>
+    <li><b>Envoy of the Sultan of India</b>: brought eight leopards and ten greyhounds trained to sit on horses’ backs “as leopards sit”. <span class="inf">Only two leopards and two greyhounds are shown</span></li>
+    <li><b>Envoy of the Sultan of Turkia (Seljuks of Rum)</b>: brought rich presents. <span class="inf">The gift chest is schematic</span></li>
+    <li><b>Rubruck and his companion Bartholomew</b>: Franciscans, barefoot and bareheaded, carrying the Bible and breviary</li>
+    <li><b>Guests on the platforms</b>: the Khan’s sons and brothers on the west, wives and daughters on the east. <span class="inf">The cross-legged pose is inferred</span></li>
+    <li><b>The attendant who cries “Ha!” and the musician</b>: when the master begins to drink, an attendant cries “Ha!” and the player strikes his instrument; at great feasts everyone claps and dances to the music, men before the master, women before the mistress. When the master has drunk, the attendant cries again and the music stops. Rubruck adds that most of their instruments were “unknown among us”. <span class="inf">The text describes feasts in Mongol dwellings; placing this in the palace is inferred, and the instrument’s form is schematic</span></li>
+    <li><b>Door-keepers</b>: before an audience with Möngke, door-keepers searched visitors for knives; no one may touch the threshold going in or out</li>
+    <li><b>Fabrics</b>: silks and cloth of gold were brought from Cathay (north China) and Persia and worn by Mongols in summer; robes fasten on the right. <span class="inf">Nobles’ robes are shown with a gold medallion pattern</span></li>
+    <li><b>Knives and purses</b>: locals admired the knives, gloves, purses and belts of Rubruck’s servants; door-keepers searched for knives before audiences. <span class="inf">Mongols wearing knives at the belt is inferred</span></li>
+    <li><b>Married women</b>: shave the front half of the head; wear a robe as wide as a nun’s gown, open in front and tied on the right; a fur hood is worn over the bocca</li>
+    <li class="inf">Inferred: the envoys’ clothing, skin tones, faces and attendants are not described and are schematic. These people were not all present on the same day; the scene is a composite. Rubruck himself repeatedly insisted he was not an envoy</li>
+  </ul></details>
+  <details><summary>Sources for the furnishings</summary>
+  <ul>
+    <li><b>Gilded couch</b>: Rubruck says Batu sat on “a long seat as broad as a couch, all gilded”, that Möngke was “seated on a couch”, and that a gilded couch was brought for him</li>
+    <li><b>Gold and silver cups set with stones</b>: at the entrance of Batu’s tent stood a bench with cosmos and “big cups of gold and silver, ornamented with precious stones”. <span class="inf">Placing them on the platforms is inferred</span></li>
+    <li><b>Fire grates</b>: a fire of briars, wormwood roots and cattle dung burned in a grate in the middle of Möngke’s dwelling. <span class="inf">Fire grates in the palace aisles are inferred</span></li>
+    <li><b>Bows on the west side</b>: men entering a dwelling would never hang their bows on the women’s side. <span class="inf">Hanging them on the west pillars is inferred, as are the quivers</span></li>
+    <li><b>Embroidered felt</b>: Mongols embroider felts with vines, trees, birds and beasts and hang them before the door. <span class="inf">Laying them on the platforms and before the Khan’s couch is inferred; the pattern is schematic</span></li>
+  </ul></details>
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://depts.washington.edu/silkroad/texts/rubruck.html" target="_blank" rel="noopener noreferrer">William of Rubruck, Journey (tr. Rockhill, 1900; with Jackson 1990 readings)</a></li>
+    <li><a href="https://dainst.org/forschung/projekte/noslug/4924" target="_blank" rel="noopener noreferrer">DAI: Conservation and restoration of the “Great Hall of Karakorum”</a></li>
+    <li><a href="https://www.dainst.blog/?p=7599" target="_blank" rel="noopener noreferrer">DAI: 800 years of Karakorum – 20 years of Mongolian-German excavations</a></li>
+    <li><a href="https://publicdomainreview.org/essay/the-khans-drinking-fountain" target="_blank" rel="noopener noreferrer">Public Domain Review: The Khan’s Drinking Fountain</a></li>
+  </ul>
+  </aside>
+<footer class="caption" aria-live="polite"><p id="step">&nbsp;</p><p id="cap">&nbsp;</p><div id="progress"><i></i></div></footer>
+<p class="hint">Drag to rotate · scroll to zoom</p>
+
+<div id="ha">Ha!</div>
+<canvas class="sky" id="glyphs" aria-hidden="true"></canvas>
+<script>
+// Waterfall of verse in the traditional Mongolian script, which is itself written in vertical columns, top to bottom.
+// Lines: first stanza of "My Native Land" (Minii nutag) by Dashdorjiin Natsagdorj (1906-1937), public domain.
+// Transcribed from the Cyrillic text into the classical script for this page; not checked by a native reader.
+(() => {
+  const NNBSP = ' ', MVS = '᠎';
+  const LINES = [
+    "        ",
+"       ",
+"       ",
+"       ",
+
+"        ",
+"      ",
+"      ",
+    "       ",
+
+    "        ",
+    "      ",
+    "       ",
+    "       ",
+
+    "       ",
+    "        ",
+    "       ",
+    "       ",
+
+    "       ",
+    "      ",
+    "       ",
+    "      ",
+
+    "      ",
+    "      ",
+    "      ",
+    "     ",
+
+    "         ",
+    "       ",
+    "          ",
+    "           ",
+
+    "         ",
+    "        ",
+    "       ",
+    "       ",
+  ];
+  const cv = document.getElementById('glyphs'), g = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SIZE = 18, GAP = 38, FONT = `${SIZE}px "Onon Sonin Sans", "Noto Sans Mongolian", "Mongolian Baiti", serif`;
+  let w = 0, h = 0, cols = [], next = 0, seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function respawn(c, anywhere) {
+    c.text = LINES[next++ % LINES.length];
+    g.font = FONT; c.len = g.measureText(c.text).width;
+    c.speed = 16 + rnd() * 22; c.alpha = 0.22 + rnd() * 0.25;
+    c.end = 0.55 + rnd() * 0.3; // fraction of the screen height where this line dissolves
+    // y is where the head (end of the line) is; on first layout start mid-fall so the screen is already full
+    c.y = anywhere ? h * (0.15 + rnd() * (c.end - 0.2)) : -rnd() * h * 0.12;
+    c.dust = Array.from({ length: 70 }, () => [rnd(), rnd() * 2 - 1, 1 + rnd() * 2.5, rnd()]); // erase specks: along, across, radius, when
+  }
+  function layout() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    w = innerWidth; h = innerHeight; cv.width = w * dpr; cv.height = h * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cols = [];
+    for (let x = GAP / 2; x < w; x += GAP) { const c = { x: x + (rnd() - 0.5) * 8 }; respawn(c, true); cols.push(c); }
+  }
+  function draw(dt) {
+    g.clearRect(0, 0, w, h); g.font = FONT; g.textBaseline = 'middle';
+    for (const c of cols) {
+      c.y += c.speed * dt;
+      const p = c.y / h, fadeIn = smooth(0, 0.12, p + c.len / h * 0.3), gone = smooth(c.end - 0.12, c.end + 0.08, p);
+      if (gone >= 1) { respawn(c, false); continue; }
+      // rotate a quarter turn clockwise so the horizontally shaped line runs down the column
+      g.save(); g.translate(c.x, c.y - c.len); g.rotate(Math.PI / 2);
+      g.beginPath(); g.rect(-2, -SIZE, c.len + 4, SIZE * 2); g.clip();
+      const a = c.alpha * fadeIn;
+      const grd = g.createLinearGradient(0, 0, c.len, 0); // older words above are dimmer, the newest word below is brightest
+      grd.addColorStop(0, `rgba(201,179,124,${a * 0.45})`);
+      grd.addColorStop(0.8, `rgba(214,188,128,${a})`);
+      grd.addColorStop(1, `rgba(245,212,130,${Math.min(1, a * 1.8)})`);
+      g.globalAlpha = 1 - gone * 0.6; g.fillStyle = grd; g.fillText(c.text, 0, 0);
+      if (gone > 0) { // dissolve: specks eat the line away, from the top of the column downward, until nothing is left
+        g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 1; g.fillStyle = '#000';
+        for (const [u, v, r, when] of c.dust) {
+          const k = smooth(when * 0.7 + (1 - u) * 0.25, when * 0.7 + (1 - u) * 0.25 + 0.25, gone);
+          if (k <= 0) continue;
+          g.beginPath(); g.arc(u * c.len, v * SIZE * 0.6, r * k * 3.2, 0, Math.PI * 2); g.fill();
+        }
+        g.globalCompositeOperation = 'source-over';
+      }
+      g.restore();
+    }
+  }
+  let last = performance.now(), acc = 0;
+  function loop(now) {
+    acc += now - last; last = now;
+    if (acc > 33) { draw(Math.min(acc, 100) / 1000); acc = 0; } // ~30 fps is plenty for a slow fall
+    requestAnimationFrame(loop);
+  }
+  addEventListener('resize', () => { layout(); draw(0); });
+  document.fonts.load(FONT).catch(() => {}).finally(() => {
+    layout(); draw(0); if (!reduce) requestAnimationFrame(loop);
+  });
+})();
+</script>
+<div id="loader" role="status"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><p>Casting the silver tree…</p></div>
+<script>setTimeout(() => { const l = document.getElementById('loader'); if (!l.classList.contains('done')) l.querySelector('p').textContent = 'Still loading… this page needs an internet connection for three.js.'; }, 12000);</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+// full device resolution with multisampling, so edges stay smooth on high-density screens
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setClearColor(0x000000, 0); // transparent, so the script waterfall behind shows through
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.domElement.setAttribute('role', 'img');
+renderer.domElement.setAttribute('aria-label', 'Animated miniature model of the silver tree fountain in Möngke Khan’s palace at Karakorum, with the Khan, envoys and court around it');
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const VIEW = 17;
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -100, 200);
+cam.position.set(-4, 12.9, 29.8); // low three-quarter view from the south-west, about 20° above the floor
+cam.zoom = innerWidth / innerHeight < 0.8 ? 2.2 : 1.2; // phones get a closer start on the tree
+const controls = new OrbitControls(cam, renderer.domElement);
+controls.target.set(0, 3.2, 3.4); // initial view centres on the silver tree
+controls.enableDamping = true;
+controls.autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches; controls.autoRotateSpeed = 0.35; // slow turntable, like a display piece
+controls.addEventListener('start', () => { controls.autoRotate = false; });
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.minZoom = 0.6; controls.maxZoom = 4;
+
+function resize() {
+  const a = innerWidth / innerHeight, v = VIEW * Math.max(1, 1.15 / a); // keep the whole base in view on narrow portrait screens
+  const lift = a < 0.8 ? v * 0.03 : 0; // on phones, raise the subject into the space between the title and the bottom controls
+  cam.left = -v * a / 2; cam.right = v * a / 2; cam.top = v / 2 - lift; cam.bottom = -v / 2 - lift;
+  cam.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}
+addEventListener('resize', resize); resize();
+
+// deterministic random so the tree looks the same on every load
+let seed = 1254;
+const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+
+// 16x16 greyscale pixel textures, tinted by material colour
+function ptex(fn, rx = 1, ry = 1) {
+  const c = document.createElement('canvas'); c.width = c.height = 16;
+  const g = c.getContext('2d');
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const v = fn(x, y), [r, gg, b] = Array.isArray(v) ? v : [v, v, v]; g.fillStyle = `rgb(${r | 0},${gg | 0},${b | 0})`; g.fillRect(x, y, 1, 1); }
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; // crisp up close, no shimmer at a distance
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace; t.repeat.set(rx, ry);
+  return t;
+}
+const TILE = (x, y) => (x === 0 || y === 0 || x === 15 || y === 15) ? 165 : (x + y < 7 && x > 1 && y > 1 && (x + y) % 3 === 0) ? 255 : 228 + rnd() * 22;
+const WOOD = (x, y) => (x % 5 === 0 ? 178 : 222) + rnd() * 26 - ((x - 8) ** 2 + (y - 9) ** 2 < 3 ? 50 : 0);
+const EARTH = (x, y) => (y % 6 === 0 ? 150 : 205) + rnd() * 40 + (rnd() < 0.04 ? 60 : 0);
+
+const ramp = new THREE.DataTexture(new Uint8Array([60, 140, 205, 255]), 4, 1, THREE.RedFormat);
+ramp.minFilter = ramp.magFilter = THREE.NearestFilter; ramp.needsUpdate = true;
+const M = (color, map = null) => new THREE.MeshToonMaterial({ color, gradientMap: ramp, map });
+const B = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity });
+
+const C = {
+  silver: M(0xc4ced9), silverLt: M(0xe4ebf2), silverDk: M(0x7d899a), gold: M(0xe6b43c), goldDk: M(0xa8781e),
+  stone: M(0x8a847a), stoneLt: M(0xa8a196), granite: M(0xa29d94), woodDk: M(0x4a2e1a),
+  dark: M(0x1c1612), felt: M(0x8c2f2a),
+};
+const woodM = (rx, ry) => M(0x7a4c2b, ptex(WOOD, rx, ry));
+
+scene.add(new THREE.HemisphereLight(0xfff1d6, 0x3a2a1c, 0.8));
+const rim = new THREE.DirectionalLight(0x9ab8ff, 0.9); rim.position.set(10, 9, -22); scene.add(rim); // cool back light separates layers
+const sun = new THREE.DirectionalLight(0xffe2b0, 2.0);
+sun.position.set(-9, 20, 12); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096); sun.shadow.normalBias = 0.02;
+Object.assign(sun.shadow.camera, { left: -17, right: 17, top: 17, bottom: -17, near: 1, far: 70 });
+sun.shadow.bias = -0.0008;
+sun.target.position.set(0, 0, -4.4); scene.add(sun, sun.target);
+const glow = new THREE.PointLight(0xfff0c8, 8, 16); glow.position.set(0, 11, -3); scene.add(glow);
+
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+function add(parent, geo, mat, pos = [0, 0, 0], rot = [0, 0, 0]) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(...pos); m.rotation.set(...rot);
+  parent.add(m); return m;
+}
+const box = (x, y, z) => new RoundedBoxGeometry(x, y, z, 2, Math.min(x, y, z) * 0.22); // softened edges, not toy bricks
+const ball = (r, sx = 1, sy = 1, sz = 1) => { const g = new THREE.SphereGeometry(r, 14, 10); g.scale(sx, sy, sz); return g; };
+const pill = (r, len) => new THREE.CapsuleGeometry(r, len, 4, 10);
+const hoop = (r, tube, depth = 0.74) => { const g = new THREE.TorusGeometry(r, tube, 6, 28); g.rotateX(Math.PI / 2); g.scale(1, 1, depth); return g; };
+const tube = (pts, r) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, r, 6);
+function rod(parent, a, b, r, mat, r2 = r * 0.7) {
+  const d = new THREE.Vector3().subVectors(b, a);
+  const m = add(parent, new THREE.CylinderGeometry(r2, r, d.length(), 10), mat);
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
+  return m;
+}
+const lathe = (pts, seg = 20) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+
+// ---------- circular display base: tiled floor, earth section, walnut plinth with brass trim ----------
+const CX = 0, CZ = -4.4, R = 12.8;
+add(scene, new THREE.CylinderGeometry(R, R, 0.7, 96), M(0x5b4330, ptex(EARTH, 48, 1)), [CX, -0.35, CZ]);
+add(scene, new THREE.TorusGeometry(R - 0.2, 0.14, 4, 96), C.granite, [CX, 0.12, CZ], [Math.PI / 2, 0, 0]);
+add(scene, new THREE.CylinderGeometry(R + 0.5, R + 0.65, 1.3, 96), M(0x4a2c1a, ptex(WOOD, 72, 1)), [CX, -1.35, CZ]);
+add(scene, new THREE.TorusGeometry(R + 0.51, 0.07, 4, 96), C.gold, [CX, -0.72, CZ], [Math.PI / 2, 0, 0]);
+add(scene, new THREE.CylinderGeometry(R + 0.85, R + 0.9, 0.2, 96), M(0x2a180e), [CX, -2.1, CZ]);
+add(scene, new THREE.CircleGeometry(R + 2.4, 64), B(0x000000, 0.4), [CX, -2.21, CZ], [-Math.PI / 2, 0, 0]); // soft drop shadow
+{ // brass nameplate on the front of the plinth
+  const c = document.createElement('canvas'); c.width = 160; c.height = 28;
+  const g = c.getContext('2d');
+  g.fillStyle = '#c49a3a'; g.fillRect(0, 0, 160, 28); g.strokeStyle = '#7a5a1a'; g.lineWidth = 3; g.strokeRect(2, 2, 156, 24);
+  g.fillStyle = '#3a2410'; g.font = 'bold 15px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KARAKORUM 1254', 80, 15);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const a = Math.atan2(-0.15, 1), r = R + 0.63;
+  add(scene, box(5, 0.8, 0.06), new THREE.MeshBasicMaterial({ map: t }), [CX + Math.sin(a) * r, -1.35, CZ + Math.cos(a) * r], [0, a, 0]);
+}
+{
+  const cells = [];
+  for (let x = -13; x <= 13; x++) for (let z = -18; z <= 9; z++) if (Math.hypot(x - CX, z - CZ) < R - 0.6) cells.push([x, z]);
+  const tiles = new THREE.InstancedMesh(box(1, 0.2, 1), M(0xffffff, ptex(TILE)), cells.length);
+  const mtx = new THREE.Matrix4(), col = new THREE.Color();
+  cells.forEach(([x, z], i) => {
+    mtx.setPosition(x, 0, z); tiles.setMatrixAt(i, mtx);
+    // DAI excavation: green glazed tiles in the central part, grey unglazed at the margins
+    col.setHex(Math.abs(x) < 5 ? ((x + z) & 1 ? 0x4a9a60 : 0x3f8752) : ((x + z) & 1 ? 0x948e85 : 0x8d877f));
+    tiles.setColorAt(i, col);
+  });
+  scene.add(tiles);
+}
+const FY = 0.1; // floor top
+
+// ---------- two rows of pillars on granite bases (nave + two aisles) ----------
+for (const x of [-5, 5]) {
+  for (const z of [5, 1, -3, -7, -11]) {
+    add(scene, box(1.1, 0.3, 1.1), C.granite, [x, FY + 0.15, z]);
+    add(scene, box(0.85, 0.12, 0.85), C.stoneLt, [x, FY + 0.36, z]);
+    add(scene, new THREE.CylinderGeometry(0.3, 0.34, 4.6, 16), woodM(2, 5), [x, FY + 2.72, z]);
+    add(scene, box(0.75, 0.3, 0.75), C.woodDk, [x, FY + 5.17, z]);
+  }
+}
+
+// ---------- raised seat platforms south, beside the pillars ----------
+for (const sx of [-1, 1]) { // west: sons & brothers, east: wives & daughters
+  add(scene, box(2.6, 0.6, 6.5), woodM(3, 1), [sx * 7.0, FY + 0.3, 1.2]);
+  add(scene, box(2.3, 0.08, 6.2), C.felt, [sx * 7.0, FY + 0.64, 1.2]);
+}
+
+// ---------- the Khan's high place to the north, two flights of steps ----------
+{
+  const DZ = -13.9, DH = 2.2;
+  add(scene, box(5, DH, 2.6), woodM(5, 2), [0, FY + DH / 2, DZ]);
+  add(scene, box(5.2, 0.15, 2.8), C.woodDk, [0, FY + DH, DZ]);
+  // gilded couch
+  add(scene, box(2.8, 0.36, 1.3), C.gold, [0, FY + DH + 0.26, DZ - 0.3]);
+  add(scene, box(2.8, 0.6, 0.16), C.gold, [0, FY + DH + 0.62, DZ - 0.88]);
+  for (const sx of [-1, 1]) add(scene, box(0.16, 0.36, 1.3), C.goldDk, [sx * 1.4, FY + DH + 0.6, DZ - 0.3]);
+  add(scene, box(2.5, 0.12, 1.1), C.felt, [0, FY + DH + 0.5, DZ - 0.25]);
+  for (let i = 0; i < 5; i++) add(scene, box(0.08, 0.08, 0.04), [C.felt, C.dark][i % 2], [-1 + i * 0.5, FY + DH + 0.26, DZ + 0.36]);
+  for (const x of [-1.5, 1.5]) for (let i = 0; i < 5; i++) {
+    const h = DH * (5 - i) / 5;
+    add(scene, box(1.0, h, 0.45), woodM(1, 1), [x, FY + h / 2, DZ + 1.3 + 0.225 + i * 0.45]);
+  }
+  // one woman sits beside him, though not so high
+  add(scene, box(2.0, 1.4, 2.2), woodM(2, 1), [3.6, FY + 0.7, DZ]);
+  add(scene, box(1.0, 0.35, 0.8), C.gold, [3.6, FY + 1.58, DZ - 0.3]);
+  add(scene, box(1.0, 0.8, 0.15), C.gold, [3.6, FY + 1.8, DZ - 0.65]);
+}
+
+
+// ---------- furnishings & decoration (notes panel says which are attested, which inferred) ----------
+const BROCADE = (x, y) => ((x + y) % 8 === 0 || (x - y + 16) % 8 === 0) ? 140 : ((x % 8 - 4) ** 2 + (y % 8 - 4) ** 2 < 3 ? 255 : 205);
+const feltW = M(0xd8ccb0), iron = M(0x3a3430);
+const gems = [M(0xc0283a), M(0x2a62c9), M(0x2f9a5a)];
+
+// gold and silver cups set with stones, on the raised seats and beside the couch
+function cup(x, y, z, gold) {
+  add(scene, lathe([[0, 0], [0.07, 0], [0.06, 0.02], [0.025, 0.05], [0.03, 0.08], [0.09, 0.12], [0.1, 0.2], [0.09, 0.2], [0.02, 0.1], [0, 0.1]], 14), gold ? C.gold : C.silver, [x, y, z]);
+  add(scene, ball(0.022), gems[(x * 7 + z * 3 & 7) % 3], [x, y + 0.15, z + 0.095]);
+}
+for (const sx of [-1, 1]) for (let i = 0; i < 5; i++) cup(sx * 6.1, FY + 0.68, -1.2 + i * 1.3, i % 2 === 0);
+cup(1.95, FY + 2.3, -13.3, true); cup(2.2, FY + 2.3, -13.0, false);
+
+// fire grates in the aisles, burning briars, wormwood roots and dung
+const fires = [];
+for (const x of [-7.2, 7.2]) {
+  const g = new THREE.Group(); g.position.set(x, FY, -6.5); scene.add(g);
+  add(g, lathe([[0, 0.5], [0.3, 0.5], [0.5, 0.62], [0.58, 0.85], [0.52, 0.86]], 12), iron).material.side = THREE.DoubleSide;
+  for (let i = 0; i < 3; i++) { const a = i * 2.094; rod(g, V(Math.cos(a) * 0.25, 0.55, Math.sin(a) * 0.25), V(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45), 0.04, iron); }
+  for (let i = 0; i < 6; i++) add(g, box(0.16, 0.08, 0.12), B(i % 2 ? 0x8a2a10 : 0x2a1a12), [Math.cos(i) * 0.25, 0.68, Math.sin(i) * 0.25], [0, i, 0]);
+  const flames = [[0xff7a1a, 0.3, 0.6], [0xffb02e, 0.2, 0.45], [0xfff0a0, 0.1, 0.3]].map(([col, r, h]) => {
+    const f = add(g, new THREE.ConeGeometry(r, h, 5), B(col), [0, 0.72 + h / 2, 0]); f.userData.h = h; return f;
+  });
+  const light = new THREE.PointLight(0xff9a40, 4, 7); light.position.set(0, 1.4, 0); g.add(light);
+  fires.push({ flames, light, seed: x });
+}
+
+// men's bows hang on the west (men's) side
+for (const z of [1, -3, -7]) {
+  const g = new THREE.Group(); g.position.set(-5.25, FY + 3.2, z); g.rotation.y = Math.PI; scene.add(g);
+  add(g, new THREE.TorusGeometry(0.55, 0.035, 4, 16, Math.PI * 0.8), C.woodDk, [0, 0, 0], [0, 0, -Math.PI * 0.4]);
+  add(g, box(0.015, 1.04, 0.015), feltW, [0.17, 0, 0]);
+  add(g, box(0.08, 0.16, 0.07), C.felt, [0.55, 0, 0]);
+}
+
+// ---------- the silver tree ----------
+// Ornament (chased scales, beaded bands, petals, leaf veins, serpent scales, feathers) is schematic: Rubruck names the parts, not their decoration.
+const SCALE = (x, y) => { // overlapping chased scales
+  const row = y >> 2, cx = ((x + (row % 2) * 4) % 8) - 3.5, cy = (y % 4) * 2 - 1;
+  const d = Math.abs(Math.hypot(cx, cy + 2) - 4.2);
+  return d < 0.7 ? 150 : 222 + (cy < 2 ? 22 : 0);
+};
+const SERP = (x, y) => ((x + y) % 4 === 0 || (x - y + 16) % 4 === 0) ? 150 : (x + y) % 4 === 2 ? 255 : 228;
+const VEIN = (x, y) => (x === 7 || x === 8) ? 165 : (Math.abs(x - 7.5) === (y % 6) + 1.5 ? 190 : 235);
+const silverChased = M(0xc4ced9, ptex(SCALE, 10, 14));
+const goldScaled = M(0xe6b43c, ptex(SERP, 90, 3));
+const silverLeaf = M(0xffffff, ptex(VEIN)); silverLeaf.side = THREE.DoubleSide;
+// tube whose radius follows rFn(u) along its length
+function taperTube(pts, segs, radial, rFn) {
+  const curve = new THREE.CatmullRomCurve3(pts), g = new THREE.TubeGeometry(curve, segs, 1, radial);
+  const pos = g.attributes.position, c = V(0, 0, 0), v = V(0, 0, 0);
+  for (let i = 0; i <= segs; i++) {
+    curve.getPointAt(i / segs, c); const r = rFn(i / segs);
+    for (let j = 0; j <= radial; j++) { const k = i * (radial + 1) + j; v.fromBufferAttribute(pos, k).sub(c).multiplyScalar(r).add(c); pos.setXYZ(k, v.x, v.y, v.z); }
+  }
+  g.computeVertexNormals(); return g;
+}
+// a ring of small beads, the classic edge ornament of silverwork
+function beads(parent, r, y, n, size, mat) {
+  const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(size, 8, 6), mat, n), m = new THREE.Matrix4();
+  for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; inst.setMatrixAt(i, m.makeTranslation(Math.cos(a) * r, y, Math.sin(a) * r)); }
+  parent.add(inst); return inst;
+}
+// flat shape with uv normalised to its bounding box, optionally cupped
+function shapeGeo(shape, cup = 0) {
+  const g = new THREE.ShapeGeometry(shape, 8); g.computeBoundingBox();
+  const { min, max } = g.boundingBox, pos = g.attributes.position, uv = g.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i);
+    uv.setXY(i, (x - min.x) / (max.x - min.x), (y - min.y) / (max.y - min.y));
+    pos.setZ(i, cup * x * x);
+  }
+  g.computeVertexNormals(); return g;
+}
+const leafShape = new THREE.Shape(); // pointed leaf, 0.32 long along +y
+leafShape.moveTo(0, 0); leafShape.quadraticCurveTo(0.09, 0.1, 0, 0.32); leafShape.quadraticCurveTo(-0.09, 0.1, 0, 0);
+const featherShape = new THREE.Shape(); // rounded feather, 1 long along +y
+featherShape.moveTo(0, 0); featherShape.quadraticCurveTo(0.14, 0.35, 0.05, 0.95); featherShape.quadraticCurveTo(0, 1.02, -0.05, 0.95); featherShape.quadraticCurveTo(-0.12, 0.35, 0, 0);
+
+const TREE = new THREE.Group(); TREE.position.set(0, FY, 3.4); scene.add(TREE);
+const PT = 0.4; // plinth height
+add(TREE, lathe([[0, 0], [3.0, 0], [3.02, 0.06], [2.94, 0.11], [2.92, 0.27], [2.98, 0.31], [2.98, 0.35], [2.9, 0.4], [0, 0.4]], 72), C.stone);
+beads(TREE, 2.86, PT + 0.02, 120, 0.035, C.stoneLt);
+add(TREE, box(0.9, 0.34, 0.08), C.woodDk, [0, 0.2, 2.97]); // hatch to the vault where a man hides
+add(TREE, box(0.7, 0.24, 0.1), C.dark, [0, 0.2, 2.98]);
+add(TREE, new THREE.TorusGeometry(0.05, 0.012, 6, 14), C.silverDk, [0, 0.2, 3.04]);
+const T = new THREE.Group(); T.position.y = PT; TREE.add(T);
+
+const TH = 6, trunkR = (y) => 0.42 - 0.2 * y / TH;
+add(T, lathe([[0, 0], [0.78, 0], [0.6, 0.12], [0.48, 0.4], [trunkR(1), 1], [trunkR(3), 3], [trunkR(TH), TH], [0, TH]], 32), silverChased);
+for (const y of [0.95, 2.55, 4.15, 5.75]) { // beaded collars up the trunk
+  add(T, new THREE.TorusGeometry(trunkR(y) + 0.02, 0.025, 8, 32), C.silverLt, [0, y, 0], [Math.PI / 2, 0, 0]);
+  beads(T, trunkR(y) + 0.035, y + 0.05, 28, 0.018, C.silverLt);
+  beads(T, trunkR(y) + 0.035, y - 0.05, 28, 0.018, C.silverLt);
+}
+for (let k = 0; k < 12; k++) { // petal skirt at the foot of the trunk
+  const a = k / 12 * Math.PI * 2, p = new THREE.Group(); p.position.set(Math.cos(a) * 0.5, 0.12, Math.sin(a) * 0.5); p.rotation.set(0, -a + Math.PI / 2, 0); T.add(p);
+  add(p, ball(0.12, 1, 2.6, 0.32), k % 2 ? C.silverLt : C.silver, [0, 0.22, 0], [-0.55, 0, 0]);
+  add(p, pill(0.012, 0.42), C.silverDk, [0, 0.22, 0.03], [-0.55, 0, 0]);
+}
+
+// silver branches with leaves and fruit
+const leafMats = [], fruitMats = [], q4 = new THREE.Quaternion(), up = V(0, 1, 0);
+function branch(p, dir, len, r, depth) {
+  const end = p.clone().addScaledVector(dir, len);
+  rod(T, p, end, r, C.silverDk);
+  add(T, ball(r * 1.15), C.silver, [end.x, end.y, end.z]); // knuckle
+  if (depth === 0) {
+    for (let i = 0; i < 9; i++) { // leaves fan out from the twig tip, pointing outward and up
+      const out = dir.clone().add(V((rnd() - 0.5) * 1.4, (rnd() - 0.2) * 1.1, (rnd() - 0.5) * 1.4)).normalize();
+      q4.setFromUnitVectors(up, out).multiply(new THREE.Quaternion().setFromAxisAngle(up, rnd() * Math.PI));
+      leafMats.push(new THREE.Matrix4().compose(end.clone().addScaledVector(out, 0.03), q4.clone(), V(1, 1, 1).multiplyScalar(0.8 + rnd() * 0.4)));
+    }
+    if (rnd() < 0.6) fruitMats.push(new THREE.Matrix4().makeTranslation(end.x, end.y - 0.17, end.z));
+    return;
+  }
+  for (let i = 0, n = depth >= 2 ? 3 : 2; i < n; i++) {
+    const a = rnd() * Math.PI * 2;
+    branch(end, dir.clone().add(V(Math.cos(a) * 0.6, 0.35, Math.sin(a) * 0.6)).normalize(), len * 0.68, r * 0.65, depth - 1);
+  }
+}
+for (let i = 0; i < 7; i++) {
+  const a = i * 2.4 + 0.4, y = 2.8 + (i / 6) * 2.4;
+  branch(V(0, y, 0), V(Math.cos(a) * 0.8, 0.6, Math.sin(a) * 0.8).normalize(), 0.62, 0.1, 3);
+}
+{
+  const leaves = new THREE.InstancedMesh(shapeGeo(leafShape, 1.6), silverLeaf, leafMats.length);
+  leafMats.forEach((m, i) => { leaves.setMatrixAt(i, m); leaves.setColorAt(i, new THREE.Color(i % 3 ? 0xd7dfe8 : 0xa3aebc)); });
+  T.add(leaves);
+  const fruit = new THREE.InstancedMesh(ball(0.09, 1, 0.92, 1), C.silverLt, fruitMats.length);
+  const calyx = new THREE.InstancedMesh(new THREE.ConeGeometry(0.035, 0.05, 6), C.silverDk, fruitMats.length);
+  const stalk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.008, 0.01, 0.1, 5), C.silverDk, fruitMats.length);
+  const off = (m, y) => m.clone().multiply(new THREE.Matrix4().makeTranslation(0, y, 0));
+  fruitMats.forEach((m, i) => { fruit.setMatrixAt(i, m); calyx.setMatrixAt(i, off(m, -0.09)); stalk.setMatrixAt(i, off(m, 0.12)); });
+  T.add(fruit, calyx, stalk);
+}
+
+// four conduits bent downward, each with a gilded serpent twining round the trunk
+const LIQ = [ // pipe liquors, per Rubruck
+  { color: 0x7a1424, op: 1 },     // wine
+  { color: 0xd6e2e8, op: 0.8 },   // cara cosmos, clarified mare's milk
+  { color: 0xc98a1e, op: 1 },     // bal, honey drink
+  { color: 0xe8d9a0, op: 1 },     // terracina, rice mead
+];
+const streams = [];
+LIQ.forEach((liq, k) => {
+  const a = Math.PI / 4 + k * Math.PI / 2, c = Math.cos(a), s = Math.sin(a);
+  const P = (r, y) => V(r * c, y, r * s);
+  const pipe = new THREE.CatmullRomCurve3([P(0.15, 5.6), P(0.35, 6.4), P(0.9, 7.0), P(1.7, 7.1), P(2.2, 6.8), P(2.3, 6.3), P(2.3, 5.9)]);
+  add(T, new THREE.TubeGeometry(pipe, 64, 0.085, 16), C.silver);
+  for (const u of [0.3, 0.6, 0.85]) { // banded collars along the conduit
+    const band = add(T, new THREE.TorusGeometry(0.1, 0.022, 8, 20), C.silverLt);
+    band.position.copy(pipe.getPoint(u)); band.quaternion.setFromUnitVectors(V(0, 0, 1), pipe.getTangent(u));
+  }
+  const lip = pipe.getPoint(1);
+  add(T, lathe([[0.085, 0.1], [0.09, 0.03], [0.12, -0.02], [0.13, -0.05], [0.11, -0.05]], 20), C.silverLt, [lip.x, lip.y, lip.z]).material.side = THREE.DoubleSide;
+
+  // one tapering serpent from tail tip, twice round the trunk, up along the conduit to its mouth
+  const side = V(-s, 0, c), body = [];
+  const phase = a - 2.5 * Math.PI;
+  for (let i = 0; i <= 40; i++) {
+    const t = i / 40, y = 0.3 + t * 5.3, ang = phase + t * 2.5 * Math.PI, r = trunkR(y) + 0.07;
+    body.push(V(Math.cos(ang) * r, y, Math.sin(ang) * r));
+  }
+  for (let i = 1; i <= 24; i++) {
+    const u = i / 24, n = pipe.getTangent(u).cross(side).normalize().multiplyScalar(-0.14);
+    body.push(pipe.getPoint(u).add(n));
+  }
+  const sm = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+  add(T, taperTube(body, 260, 12, (u) => 0.008 + 0.06 * sm(0, 0.4, u) - 0.012 * sm(0.93, 1, u)), goldScaled);
+  // head: wedge skull, snout, slightly open jaw, brow ridges, eyes, nostrils, forked tongue
+  const end = body[body.length - 1], dir = V(0, -1, 0);
+  const head = new THREE.Group(); head.position.copy(end); head.quaternion.setFromUnitVectors(V(0, 0, 1), dir); T.add(head);
+  add(head, ball(0.085, 1, 0.62, 1.35), C.gold, [0, 0, 0.06]);
+  add(head, ball(0.06, 1, 0.6, 1.5), C.gold, [0, 0.005, 0.16]);
+  add(head, ball(0.05, 0.95, 0.35, 1.5), C.goldDk, [0, -0.04, 0.13], [0.25, 0, 0]);
+  for (const sx of [-1, 1]) {
+    add(head, ball(0.022), C.dark, [sx * 0.06, 0.03, 0.08]);
+    add(head, ball(0.03, 1.2, 0.4, 1.4), C.goldDk, [sx * 0.055, 0.05, 0.08]);
+    add(head, ball(0.008), C.dark, [sx * 0.02, 0.03, 0.24]);
+    add(head, pill(0.005, 0.05), M(0xb02a2a), [sx * 0.012, -0.03, 0.27], [Math.PI / 2, sx * 0.3, 0]);
+  }
+
+  const mouth = lip.clone().add(V(0, -0.08, 0));
+  // silver bowl at the foot for this liquor
+  const bx = mouth.x, bz = mouth.z;
+  const bowl = add(T, lathe([[0, 0.02], [0.26, 0.02], [0.3, 0.06], [0.42, 0.14], [0.5, 0.3], [0.55, 0.34], [0.52, 0.36]], 40), C.silver, [bx, 0, bz]);
+  bowl.material = bowl.material.clone(); bowl.material.side = THREE.DoubleSide;
+  add(T, new THREE.TorusGeometry(0.54, 0.018, 6, 40), C.silverLt, [bx, 0.35, bz], [Math.PI / 2, 0, 0]);
+  beads(T, 0.47, 0.25, 30, 0.014, C.silverLt).position.set(bx, 0, bz);
+  add(T, new THREE.CylinderGeometry(0.22, 0.26, 0.04, 24), C.silverDk, [bx, 0.02, bz]);
+  const level = add(T, new THREE.CylinderGeometry(0.44, 0.44, 0.02, 24), B(liq.color, liq.op), [bx, 0.06, bz]);
+
+  const top = mouth.y, L = top - 0.15;
+  const geo = new THREE.CylinderGeometry(0.055, 0.055, 1, 8); geo.translate(0, -0.5, 0);
+  const jet = add(T, geo, B(liq.color, liq.op), [bx, top, bz]);
+  const drops = [0, 1, 2, 3].map(() => add(T, ball(0.06, 1, 1.5, 1), B(liq.color, liq.op), [bx, top, bz]));
+  streams.push({ jet, drops, level, top, L });
+});
+
+// four silver lions seated at the roots, facing outward (local +x is forward)
+for (let k = 0; k < 4; k++) {
+  const a = k * Math.PI / 2, RL = 1.3;
+  const g = new THREE.Group(); g.position.set(RL * Math.cos(a), 0, RL * Math.sin(a)); g.rotation.y = -a; T.add(g);
+  // haunches and folded hind legs resting on the plinth
+  for (const sz of [-1, 1]) {
+    add(g, ball(0.17, 1.15, 0.95, 0.8), C.silver, [-0.18, 0.2, sz * 0.14]);
+    add(g, ball(0.065, 1.6, 0.55, 1), C.silverLt, [0, 0.04, sz * 0.17]);
+  }
+  // upright body rising from the haunches to a deep chest
+  add(g, pill(0.17, 0.3), C.silver, [-0.06, 0.45, 0], [0, 0, -0.55]);
+  add(g, ball(0.2, 0.95, 1.1, 0.95), C.silver, [0.1, 0.62, 0]);
+  // straight forelegs with paws and toes
+  for (const sz of [-1, 1]) {
+    add(g, ball(0.075, 1, 1.6, 0.9), C.silver, [0.17, 0.5, sz * 0.11]);
+    add(g, pill(0.045, 0.32), C.silver, [0.22, 0.22, sz * 0.11]);
+    add(g, ball(0.06, 1.4, 0.6, 1.1), C.silverLt, [0.26, 0.04, sz * 0.11]);
+    for (const tz of [-0.035, 0, 0.035]) add(g, ball(0.02), C.silverLt, [0.33, 0.03, sz * 0.11 + tz]);
+  }
+  // mane: dark core ringed by swept locks
+  add(g, ball(0.22, 0.85, 1.1, 1.05), C.silverDk, [0.16, 0.86, 0]);
+  for (let i = 0; i < 18; i++) {
+    const t = i / 18 * Math.PI * 2, lock = new THREE.Group(); lock.position.set(0.16, 0.88 + Math.cos(t) * 0.19, Math.sin(t) * 0.21);
+    lock.rotation.set(t, 0, 0.45); g.add(lock);
+    add(lock, ball(0.055, 0.8, 1.9, 0.7), i % 2 ? C.silverDk : C.silver, [0, 0.06, 0]);
+  }
+  // head held high: skull, brow, eyes, ears, muzzle pads, nose, closed mouth, chin
+  add(g, ball(0.13, 1.05, 1, 1), C.silverLt, [0.33, 0.95, 0]);
+  add(g, pill(0.026, 0.11), C.silver, [0.42, 1.01, 0], [Math.PI / 2, 0, 0]);
+  for (const sz of [-1, 1]) {
+    add(g, ball(0.018), C.dark, [0.44, 0.99, sz * 0.05]);
+    add(g, ball(0.036, 0.5, 1, 1), C.silver, [0.27, 1.07, sz * 0.09]);
+    add(g, ball(0.045), C.silverLt, [0.47, 0.9, sz * 0.038]);
+  }
+  add(g, ball(0.032, 1, 0.75, 1.2), C.silverDk, [0.5, 0.94, 0]);
+  add(g, pill(0.008, 0.05), C.silverDk, [0.49, 0.86, 0], [Math.PI / 2, 0, 0]);
+  add(g, ball(0.04, 1, 0.6, 0.9), C.silverLt, [0.44, 0.84, 0]);
+  // tail curled round the haunch onto the plinth, ending in a tuft
+  add(g, taperTube([V(-0.32, 0.12, 0), V(-0.36, 0.05, 0.12), V(-0.2, 0.03, 0.24), V(0.02, 0.03, 0.26)], 24, 8, (u) => 0.03 - 0.012 * u), C.silver);
+  for (const [dx, dz] of [[0, 0], [0.04, 0.02], [0.03, -0.03]]) add(g, ball(0.04, 1.4, 0.8, 0.8), C.silverDk, [0.06 + dx, 0.04, 0.26 + dz]);
+}
+
+// the angel on a finial above the four conduits: long robe, raised wings, a long trumpet lifted to the lips
+add(T, lathe([[0, 0], [0.16, 0], [0.12, 0.08], [0.07, 0.2], [0.09, 0.32], [0.16, 0.42], [0.18, 0.5], [0.14, 0.56], [0, 0.57]], 24), C.silverLt, [0, TH - 0.02, 0]);
+beads(T, 0.17, TH + 0.47, 22, 0.014, C.silverLt);
+const angel = new THREE.Group(); angel.position.y = TH + 0.55; angel.rotation.y = Math.PI; angel.scale.setScalar(1.15); T.add(angel); // faces north, toward the Khan
+add(angel, lathe([[0, 0], [0.24, 0], [0.23, 0.04], [0.19, 0.2], [0.15, 0.5], [0.13, 0.72], [0.15, 0.9], [0.16, 1.0], [0.13, 1.1], [0.07, 1.16], [0, 1.17]], 32), C.silver);
+for (let i = 0; i < 12; i++) { // falling folds of the robe
+  const t = i / 12 * Math.PI * 2;
+  add(angel, pill(0.016, 0.55), i % 2 ? C.silverLt : C.silver, [Math.cos(t) * 0.18, 0.33, Math.sin(t) * 0.18], [Math.sin(t) * 0.1, 0, -Math.cos(t) * 0.1]);
+}
+add(angel, new THREE.TorusGeometry(0.235, 0.015, 6, 32), C.silverLt, [0, 0.03, 0], [Math.PI / 2, 0, 0]);
+add(angel, new THREE.TorusGeometry(0.135, 0.02, 8, 28), C.silverDk, [0, 0.74, 0], [Math.PI / 2, 0, 0]); // girdle
+add(angel, new THREE.TorusGeometry(0.08, 0.018, 8, 20), C.silverLt, [0, 1.12, 0], [Math.PI / 2, 0, 0]); // neckline
+add(angel, new THREE.CylinderGeometry(0.035, 0.045, 0.08, 12), C.silverLt, [0, 1.18, 0]);
+add(angel, ball(0.095, 0.95, 1.1, 1), C.silverLt, [0, 1.3, 0.01]);
+add(angel, ball(0.016, 1, 1.2, 1), C.silver, [0, 1.29, 0.1]);
+for (const sx of [-1, 1]) add(angel, ball(0.01), C.silverDk, [sx * 0.032, 1.32, 0.088]);
+for (let i = 0; i < 14; i++) { // curls
+  const t = i / 14 * Math.PI * 1.6 + Math.PI * 0.7;
+  add(angel, ball(0.035), i % 2 ? C.silverDk : C.silver, [Math.cos(t) * 0.085, 1.34 + (i % 3) * 0.03, Math.sin(t) * 0.085 - 0.01]);
+}
+{ // wings rise from the shoulders and sweep up and back, tips above the head
+  const featherLt = M(0xe4ebf2), featherMd = M(0xc4ced9), feather = shapeGeo(featherShape, 0.25);
+  featherLt.side = featherMd.side = THREE.DoubleSide;
+  for (const sx of [-1, 1]) {
+    const w = new THREE.Group(); w.position.set(sx * 0.08, 1.06, -0.09); w.rotation.set(-0.4, sx * 0.45, 0); angel.add(w);
+    add(w, pill(0.025, 0.55), C.silverLt, [sx * 0.12, 0.3, 0], [0, 0, -sx * 0.4]); // leading edge
+    for (let i = 0; i < 9; i++) { // flight feathers, longest at the top
+      const f = add(w, feather, i % 2 ? featherMd : featherLt, [sx * i * 0.012, 0, -0.004 * i]);
+      f.scale.set(0.6, 1.0 - i * 0.07, 1); f.rotation.z = -sx * (0.1 + i * 0.1);
+    }
+    for (let i = 0; i < 7; i++) { // coverts over their bases
+      const f = add(w, feather, featherLt, [sx * i * 0.012, 0.04, 0.012]);
+      f.scale.set(0.55, 0.48 - i * 0.03, 1); f.rotation.z = -sx * (0.14 + i * 0.12);
+    }
+  }
+}
+// long trumpet: rests lowered, rises to the lips when blown; both hands and sleeves move with it
+const horn = new THREE.Group(); horn.position.set(0, 1.28, 0.1); angel.add(horn);
+{
+  add(horn, new THREE.ConeGeometry(0.018, 0.05, 10), C.silverLt, [0, 0, 0.015], [Math.PI / 2, 0, 0]);
+  const pipeG = new THREE.CylinderGeometry(0.016, 0.022, 0.9, 12); pipeG.rotateX(Math.PI / 2); pipeG.translate(0, 0, 0.48);
+  add(horn, pipeG, C.silverLt);
+  for (const z of [0.3, 0.62, 0.88]) add(horn, new THREE.TorusGeometry(0.026, 0.008, 6, 14), C.silverDk, [0, 0, z]);
+  const bell = lathe([[0.022, 0], [0.03, 0.06], [0.05, 0.13], [0.1, 0.19], [0.13, 0.21], [0.12, 0.215]], 24); bell.rotateX(Math.PI / 2);
+  add(horn, bell, C.silverLt, [0, 0, 0.92]).material.side = THREE.DoubleSide;
+  // hands on the trumpet, sleeves back to the shoulders (shoulders in the raised pose)
+  for (const [sx, z] of [[-1, 0.12], [1, 0.42]]) {
+    const hand = V(0, -0.03, z), shoulder = V(sx * 0.15, -0.16, -0.155), elbow = hand.clone().lerp(shoulder, 0.5).add(V(sx * 0.05, -0.07, 0));
+    add(horn, ball(0.03, 1, 0.8, 1.1), C.silverLt, [hand.x, hand.y, hand.z]);
+    rod(horn, hand, elbow, 0.03, C.silver, 0.035); rod(horn, elbow, shoulder, 0.035, C.silver, 0.04);
+  }
+}
+const bellTip = new THREE.Object3D(); bellTip.position.z = 1.14; horn.add(bellTip);
+const rings = [0, 1, 2].map(() => {
+  const r = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.035, 4, 12), B(0xfff3c4, 0.99)); scene.add(r); return r;
+});
+
+
+// ---------- people (notes panel lists what each figure is based on) ----------
+const hairM = M(0x1e1612), bootM = M(0x3a2618), mouthM = M(0x7a3b30), leatherM = M(0x5a3a22);
+const SKINS = [0xc89a74, 0xb88a64, 0xd2a882, 0xa87a58].map((c) => [M(c), M(new THREE.Color(c).multiplyScalar(0.85).getHex())]);
+const SEAL = () => rnd() < 0.14 ? [58, 52, 46] : [150 + rnd() * 20, 142 + rnd() * 18, 128 + rnd() * 14];
+const LEO = () => rnd() < 0.16 ? [52, 36, 20] : [214, 168 + rnd() * 16, 80];
+// embroidered felt: vine border with leaves, small birds in the field (Rubruck: "vines and trees, birds and beasts")
+const FELTV = (x, y) => {
+  const vine = y === 2 + Math.round(Math.sin(x * Math.PI / 4)) || y === 13 - Math.round(Math.sin(x * Math.PI / 4));
+  if (y === 0 || y === 15) return [60, 40, 30];
+  if (vine) return [232, 214, 170];
+  if ((y === 4 || y === 11) && x % 4 === 1) return [70, 120, 70];
+  if (y > 5 && y < 10 && ((x - 4) % 8 === 0 && y === 7 || (x - 4) % 8 === 1 && y === 6 || (x - 4) % 8 === 7 && y === 6)) return [40, 60, 110];
+  return [150 + rnd() * 10, 40, 34];
+};
+const feltRug = (w, h) => M(0xffffff, ptex(FELTV, Math.max(1, Math.round(w)), Math.max(1, Math.round(h / 2))));
+const silk = (c) => M(c, ptex(BROCADE, 2, 2));
+
+function person({ robe, trim = 0x2a2420, sash = C.gold, hat = 'mongol', pose = 'stand', bare = false, tone = 0, knife = true }) {
+  const g = new THREE.Group(), rm = typeof robe === 'number' ? M(robe) : robe, tm = M(trim);
+  const [sk, skDk] = SKINS[tone];
+  const flat = (geo) => { geo.scale(1, 1, 0.74); return geo; }; // bodies are wider than deep
+  let by;
+  if (pose === 'stand') {
+    by = 1.02;
+    for (const sx of [-1, 1]) {
+      if (bare) add(g, ball(0.06, 1, 0.5, 1.8), sk, [sx * 0.1, 0.03, 0.04]);
+      else { add(g, pill(0.065, 0.2), bootM, [sx * 0.1, 0.2, 0]); add(g, ball(0.07, 1, 0.7, 1.6), bootM, [sx * 0.1, 0.05, 0.05]); }
+    }
+    // long deel skirt flaring to mid-shin, trimmed hem, front edge closing on the wearer's right
+    add(g, flat(lathe([[0, by - 0.68], [0.3, by - 0.68], [0.31, by - 0.6], [0.28, by - 0.35], [0.24, by - 0.1], [0.22, by], [0, by]], 18)), rm);
+    add(g, hoop(0.305, 0.022), tm, [0, by - 0.66, 0]);
+    add(g, box(0.035, 0.64, 0.03), tm, [-0.1, by - 0.34, 0.2], [-0.1, 0, 0]);
+  } else if (pose === 'bench') {
+    by = 0.18;
+    for (const sx of [-1, 1]) {
+      add(g, pill(0.095, 0.3), rm, [sx * 0.11, 0.09, 0.2], [Math.PI / 2, 0, 0]);
+      add(g, pill(0.075, 0.26), rm, [sx * 0.11, -0.17, 0.42]);
+      add(g, ball(0.075, 1, 0.7, 1.6), bootM, [sx * 0.11, -0.38, 0.47]);
+    }
+    add(g, box(0.46, 0.3, 0.05), rm, [0, -0.04, 0.45]); // robe falling over the knees
+  } else { // cross-legged on a felt
+    by = 0.18;
+    add(g, ball(0.34, 1, 0.3, 0.75), rm, [0, 0.09, 0.08]);
+    for (const sx of [-1, 1]) add(g, ball(0.06, 1, 0.7, 1.4), bootM, [sx * 0.2, 0.05, 0.3]);
+  }
+  add(g, flat(lathe([[0, by - 0.02], [0.23, by - 0.02], [0.245, by + 0.15], [0.25, by + 0.3], [0.22, by + 0.45], [0.13, by + 0.54], [0, by + 0.56]], 18)), rm);
+  add(g, box(0.045, 0.4, 0.02), tm, [-0.05, by + 0.3, 0.185], [0, 0, -0.5]); // lapel from left shoulder to right hip
+  add(g, hoop(0.13, 0.03), tm, [0, by + 0.52, 0]);
+  add(g, hoop(0.235, 0.032), sash, [0, by + 0.03, 0]);
+  if (knife) { add(g, pill(0.022, 0.16), leatherM, [-0.2, by - 0.11, 0.1], [0, 0, 0.2]); add(g, ball(0.025), C.silverDk, [-0.21, by, 0.1]); }
+  add(g, ball(0.05, 1, 1.2, 0.6), leatherM, [0.17, by - 0.06, 0.14]);
+  const arms = [-1, 1].map((sx) => {
+    const a = new THREE.Group(); a.position.set(sx * 0.27, by + 0.46, 0); g.add(a);
+    add(a, pill(0.065, 0.18), rm, [0, -0.14, 0]);
+    add(a, new THREE.CylinderGeometry(0.075, 0.105, 0.24, 12), rm, [0, -0.37, 0]); // wide sleeve
+    add(a, hoop(0.1, 0.02, 1), tm, [0, -0.49, 0]);
+    add(a, ball(0.05, 1, 1.2, 0.8), sk, [0, -0.55, 0]);
+    return a;
+  });
+  add(g, new THREE.CylinderGeometry(0.055, 0.06, 0.1, 10), sk, [0, by + 0.58, 0]);
+  const hy = by + 0.74;
+  add(g, ball(0.13, 0.95, 1.08, 1), sk, [0, hy, 0]);
+  add(g, ball(0.025, 1, 1.2, 1), skDk, [0, hy - 0.02, 0.125]);
+  add(g, box(0.05, 0.012, 0.01), mouthM, [0, hy - 0.07, 0.118]);
+  for (const sx of [-1, 1]) {
+    add(g, ball(0.016), C.dark, [sx * 0.05, hy + 0.02, 0.112]);
+    add(g, box(0.05, 0.012, 0.012), hairM, [sx * 0.05, hy + 0.055, 0.115]);
+    add(g, ball(0.03, 0.5, 1, 0.8), sk, [sx * 0.123, hy, 0]);
+  }
+  if (hat === 'mongol') { // shaved crown and nape, tuft to the eyebrows, side hair plaited to the ears
+    add(g, pill(0.025, 0.06), hairM, [0, hy + 0.1, 0.1], [0.5, 0, 0]);
+    for (const sx of [-1, 1]) {
+      add(g, ball(0.07, 0.5, 1.1, 1), hairM, [sx * 0.112, hy + 0.03, -0.02]);
+      add(g, pill(0.025, 0.12), hairM, [sx * 0.13, hy - 0.12, 0.02]);
+      add(g, ball(0.03), C.felt, [sx * 0.13, hy - 0.2, 0.02]);
+    }
+  } else if (hat === 'bocca') { // fur hood, then a tall square silk-covered headdress topped with quills and feathers
+    add(g, new THREE.SphereGeometry(0.145, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6), M(0x4a3020), [0, hy + 0.01, -0.01]);
+    add(g, box(0.26, 0.26, 0.05), M(0x4a3020), [0, hy - 0.1, -0.12]);
+    add(g, new THREE.CylinderGeometry(0.08, 0.1, 0.5, 12), silk(0xb03a30), [0, hy + 0.38, 0]);
+    add(g, box(0.26, 0.06, 0.26), C.gold, [0, hy + 0.66, 0]);
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; add(g, pill(0.018, 0.06), i % 2 ? M(0x2e5a3a) : M(0x6a4a2a), [Math.cos(a) * 0.12, hy + 0.73, Math.sin(a) * 0.12]); }
+    rod(g, V(0, hy + 0.69, 0), V(0, hy + 1.06, 0), 0.02, C.woodDk);
+    add(g, ball(0.05, 0.8, 1.3, 0.4), M(0x2a7a8a), [0, hy + 1.1, 0]);
+    add(g, ball(0.025), M(0x1a3a6a), [0, hy + 1.1, 0.02]);
+    for (const sx of [-1, 1]) add(g, ball(0.025), gems[sx + 1], [sx * 0.09, hy + 0.66, 0.13]);
+  } else if (hat === 'turban') {
+    add(g, hoop(0.12, 0.055, 1), M(0xeee8da), [0, hy + 0.1, 0]);
+    add(g, hoop(0.08, 0.05, 1), M(0xe2dccc), [0, hy + 0.17, 0]);
+    add(g, ball(0.1, 1, 0.7, 1), M(0xeee8da), [0, hy + 0.18, 0]);
+    add(g, ball(0.025), gems[0], [0, hy + 0.12, 0.17]);
+  } else if (hat === 'friar') { // tonsure ring, hood hanging behind
+    add(g, hoop(0.115, 0.035, 1), M(0x6b4a30), [0, hy + 0.07, 0]);
+    add(g, ball(0.15, 1, 0.6, 0.6), rm, [0, by + 0.5, -0.17]);
+  }
+  g.userData = { arms, by };
+  return g;
+}
+function place(o, x, y, z, ry = 0) { o.position.set(x, y, z); o.rotation.y = ry; scene.add(o); return o; }
+const hold = (p, rx = -0.8, rz = 0.25) => p.userData.arms.forEach((a, i) => { a.rotation.x = rx; a.rotation.z = (i ? -1 : 1) * rz; });
+function leopard() {
+  const g = new THREE.Group(), fur = M(0xffffff, ptex(LEO, 1, 1));
+  add(g, pill(0.13, 0.5), fur, [0, 0.42, 0], [0, 0, Math.PI / 2]);
+  for (const lx of [-0.26, 0.26]) for (const lz of [-0.08, 0.08]) { add(g, pill(0.04, 0.24), fur, [lx, 0.17, lz]); add(g, ball(0.045, 1.3, 0.6, 1), fur, [lx + 0.02, 0.03, lz]); }
+  add(g, ball(0.12, 1.05, 0.95, 1), fur, [0.46, 0.55, 0]);
+  add(g, ball(0.06, 1.2, 0.8, 1), fur, [0.57, 0.51, 0]);
+  add(g, ball(0.02), C.dark, [0.63, 0.53, 0]);
+  for (const ez of [-1, 1]) { add(g, ball(0.035, 0.6, 1, 1), fur, [0.42, 0.66, ez * 0.07]); add(g, ball(0.015), C.dark, [0.55, 0.58, ez * 0.055]); }
+  add(g, new THREE.TorusGeometry(0.1, 0.02, 6, 16), leatherM, [0.36, 0.52, 0], [0, Math.PI / 2, 0.4]);
+  add(g, tube([V(-0.36, 0.48, 0), V(-0.6, 0.32, 0), V(-0.72, 0.16, 0.06)], 0.03), fur);
+  return g;
+}
+function greyhound() {
+  const g = new THREE.Group(), coat = M(0xb8b2a8);
+  add(g, pill(0.075, 0.42), coat, [0, 0.52, 0], [0, 0, Math.PI / 2]);
+  add(g, ball(0.12, 1, 1.15, 0.75), coat, [0.2, 0.5, 0]); // deep chest
+  for (const lx of [-0.22, 0.24]) for (const lz of [-0.05, 0.05]) add(g, pill(0.025, 0.38), coat, [lx, 0.22, lz]);
+  rod(g, V(0.3, 0.55, 0), V(0.42, 0.72, 0), 0.045, coat);
+  add(g, pill(0.045, 0.18), coat, [0.5, 0.74, 0], [0, 0, Math.PI / 2 + 0.1]);
+  add(g, ball(0.015), C.dark, [0.5, 0.77, 0.04]);
+  add(g, ball(0.03, 0.5, 1, 1), coat, [0.43, 0.8, 0]);
+  add(g, new THREE.TorusGeometry(0.06, 0.015, 6, 14), leatherM, [0.38, 0.66, 0], [0, Math.PI / 2, 0.6]);
+  add(g, tube([V(-0.28, 0.52, 0), V(-0.45, 0.4, 0), V(-0.55, 0.3, 0.05)], 0.018), coat);
+  return g;
+}
+
+// the Khan on the gilded couch, in a spotted, glossy skin "like a seal's skin"
+place(person({ robe: M(0xffffff, ptex(SEAL, 2, 2)), trim: 0x6a5a40, pose: 'bench' }), 0, FY + 2.76, -13.75);
+add(scene, box(2.6, 0.03, 1.4), feltRug(3, 1.4), [0, FY + 2.22, -12.95]); // felt before the couch
+// the one woman who sits up there beside him, though not so high
+place(person({ robe: silk(0x6a2a4a), trim: 0xd9a83a, hat: 'bocca', pose: 'bench', knife: false, tone: 2 }), 3.6, FY + 1.76, -13.85);
+
+// the Khan's sons and brothers on the west platform, wives and daughters on the east, on embroidered felts
+for (const sx of [-1, 1]) add(scene, box(2.2, 0.03, 6.0), feltRug(2, 6), [sx * 7.0, FY + 0.695, 1.2]);
+const sitters = [];
+[[0x2a4a7a, 0xd9a83a], [0x7a2a2a, 0x2a2420], [0x2e5a3a, 0xd9a83a], [0x5a3a6a, 0xc8b890]].forEach(([c, t], i) =>
+  sitters.push(place(person({ robe: silk(c), trim: t, pose: 'cross', tone: i % 4 }), -7.4, FY + 0.71, -1.7 + i * 1.6, Math.PI / 2)));
+[[0x8a2a3a, 0xd9a83a], [0x3a5a8a, 0xe8e0c8], [0x6a4a2a, 0xd9a83a], [0x2a6a6a, 0xc8b890]].forEach(([c, t], i) =>
+  sitters.push(place(person({ robe: silk(c), trim: t, hat: 'bocca', pose: 'cross', knife: false, tone: (i + 2) % 4 }), 7.4, FY + 0.71, -1.7 + i * 1.6, -Math.PI / 2)));
+
+// cup-bearer (animated: up one flight of steps, down the other)
+const cupBearer = place(person({ robe: 0x2f4f6a, trim: 0xc8b890 }), -1.5, FY, -9.6, Math.PI);
+hold(cupBearer);
+add(cupBearer, new THREE.CylinderGeometry(0.09, 0.06, 0.14, 10), C.gold, [0, cupBearer.userData.by + 0.16, 0.42]);
+add(cupBearer, box(0.04, 0.04, 0.04), gems[0], [0, cupBearer.userData.by + 0.17, 0.52]);
+
+// at the entry: an attendant who cries "Ha!" when the master drinks, and a player who strikes his instrument
+const crier = place(person({ robe: 0x5a4a3a, trim: 0x2a2420, tone: 1 }), 3.4, FY, 1.9, Math.PI);
+const player = place(person({ robe: 0x4a3a5a, trim: 0xc8b890, tone: 3 }), -3.4, FY, 1.9, Math.PI);
+hold(player, -0.9, 0.35);
+{
+  const inst = new THREE.Group(); inst.position.set(0, player.userData.by + 0.12, 0.36); inst.rotation.z = 0.7; player.add(inst);
+  add(inst, box(0.3, 0.34, 0.1), woodM(1, 1), [0, 0, 0]);
+  add(inst, box(0.06, 0.06, 0.02), C.dark, [0, 0.03, 0.06]);
+  add(inst, box(0.06, 0.6, 0.06), C.woodDk, [0, 0.46, 0]);
+  add(inst, box(0.1, 0.12, 0.08), C.woodDk, [0, 0.8, -0.02]);
+  for (const s of [-0.015, 0.015]) add(inst, box(0.008, 0.9, 0.008), C.silverLt, [s, 0.3, 0.06]);
+}
+
+// door-keepers where the side doors stand (walls and doors are not modelled)
+place(person({ robe: 0x3a3a2a, trim: 0x6a5a40, tone: 1 }), -7.2, FY, 5.7, Math.PI);
+place(person({ robe: 0x3a3a2a, trim: 0x6a5a40, tone: 0 }), 7.2, FY, 5.7, Math.PI);
+
+// envoy of the Soldan of India, with leopards and greyhounds
+const indian = place(person({ robe: 0xe8e2d0, trim: 0xb08a3a, sash: C.felt, hat: 'turban', tone: 3, knife: false }), -1.8, FY, -6.6, Math.PI);
+hold(indian, -0.5, 0.1);
+place(leopard(), -2.7, FY, -6.9, Math.PI / 2); place(leopard(), -0.9, FY, -7.3, Math.PI / 2);
+place(greyhound(), -3.1, FY, -5.6, Math.PI / 2); place(greyhound(), -2.3, FY, -5.3, Math.PI / 2);
+for (const [hx, tx, tz] of [[-1.55, -2.36, -7.25], [-2.05, -0.56, -7.65]]) rod(scene, V(hx, FY + 0.8, -6.85), V(tx, FY + 0.55, tz), 0.012, leatherM);
+// envoy of the Soldan of Turkia, with rich presents, and his attendant
+const rum = place(person({ robe: silk(0x2e6a52), trim: 0xd9a83a, hat: 'turban', tone: 2, knife: false }), 1.8, FY, -6.4, Math.PI);
+hold(rum, -1.0, 0.3);
+add(rum, box(0.5, 0.3, 0.34), woodM(1, 1), [0, rum.userData.by + 0.08, 0.42]);
+add(rum, box(0.52, 0.06, 0.36), C.gold, [0, rum.userData.by + 0.24, 0.42]);
+add(rum, box(0.06, 0.08, 0.02), C.gold, [0, rum.userData.by + 0.1, 0.6]);
+const att = place(person({ robe: 0x7a3a2a, trim: 0xc8b890, hat: 'turban', tone: 2, knife: false }), 2.7, FY, -5.6, Math.PI);
+hold(att, -0.9, 0.3);
+add(att, new THREE.CylinderGeometry(0.16, 0.16, 0.5, 10), M(0x8a2a5a, ptex(BROCADE, 2, 1)), [0, att.userData.by + 0.12, 0.42], [0, 0, Math.PI / 2]); // a roll of silk
+// Friar William of Rubruck and Bartholomew of Cremona: barefoot, bareheaded, Bible in the bosom
+const friar = { robe: 0x6b5d4c, trim: 0x5a4c3c, sash: feltW, hat: 'friar', bare: true, knife: false };
+const william = place(person(friar), -0.45, FY, -3.9, Math.PI);
+hold(william, -0.9, 0.3);
+add(william, box(0.24, 0.3, 0.07), C.felt, [0, william.userData.by + 0.2, 0.36], [-0.5, 0, 0]);
+add(william, box(0.04, 0.12, 0.075), C.gold, [0, william.userData.by + 0.2, 0.37], [-0.5, 0, 0]);
+place(person({ ...friar, tone: 2 }), 0.45, FY, -3.7, Math.PI);
+
+// quivers beside the hung bows on the men's side
+for (const z of [1, -3, -7]) {
+  add(scene, box(0.16, 0.6, 0.12), leatherM, [-5.4, FY + 2.4, z + 0.35], [0, 0, 0.12]);
+  for (let i = 0; i < 4; i++) {
+    add(scene, box(0.015, 0.25, 0.015), C.woodDk, [-5.43 + i * 0.025, FY + 2.8, z + 0.32 + (i % 2) * 0.04]);
+    add(scene, box(0.02, 0.08, 0.05), feltW, [-5.43 + i * 0.025, FY + 2.9, z + 0.32 + (i % 2) * 0.04]);
+  }
+}
+
+scene.traverse((o) => { if (o.isMesh && !(o.material.isMeshBasicMaterial)) o.castShadow = o.receiveShadow = true; });
+
+// ---------- cycle: butler cries → trumpet → liquors poured → bowls fill → butlers draw ----------
+const PERIOD = 16;
+const t0 = performance.now() / 1000;
+const cap = document.getElementById('cap'), stepEl = document.getElementById('step'), bar = document.querySelector('#progress i');
+let loaderEl = document.getElementById('loader');
+const clamp = (v) => Math.min(1, Math.max(0, v));
+const ramp01 = (c, a, b) => clamp((c - a) / (b - a));
+const CAPS = [
+  [2, 'During the feast, the silver tree stands quietly inside the middle door'],
+  [3, 'When drink is wanted, the head butler calls to the angel to blow his trumpet'],
+  [5.6, 'The man hidden in the vault blows hard into the pipe to the angel, who raises the trumpet to his mouth and sounds it loudly'],
+  [12, 'Hearing it, servants in the cellar outside pour the four drinks into their conduits; the serpents pour wine, clarified mare’s milk, honey mead and rice wine'],
+  [13.2, 'The butlers draw from the silver bowls; the cup-bearer climbs one flight of steps and offers the cup to the Khan'],
+  [14.4, 'As the Khan drinks, an attendant cries “Ha!”, the musician strikes his instrument and everyone claps'],
+  [16, 'When the Khan has drunk, the attendant cries again and the music stops; the cup-bearer comes down the other flight and all drink in turn'],
+];
+
+const notesEl = document.getElementById('notes'), toggleEl = document.getElementById('toggle'), scrimEl = document.getElementById('scrim');
+const setNotes = (open) => {
+  notesEl.classList.toggle('open', open); scrimEl.classList.toggle('open', open); notesEl.inert = !open;
+  toggleEl.setAttribute('aria-expanded', String(open));
+  if (open) document.getElementById('close').focus(); else if (notesEl.contains(document.activeElement)) toggleEl.focus();
+};
+toggleEl.onclick = () => setNotes(!notesEl.classList.contains('open'));
+document.getElementById('close').onclick = () => setNotes(false);
+scrimEl.onclick = () => setNotes(false);
+addEventListener('keydown', (e) => { if (e.key === 'Escape') setNotes(false); });
+
+const tmp = new THREE.Vector3(), haEl = document.getElementById('ha');
+function frame() {
+  const now = performance.now() / 1000, c = (now - t0) % PERIOD;
+  const si = CAPS.findIndex(([end]) => c < end);
+  if (cap.textContent !== CAPS[si][1]) { cap.textContent = CAPS[si][1]; stepEl.textContent = `Step ${si + 1} of ${CAPS.length}`; }
+  bar.style.width = (c / PERIOD * 100).toFixed(1) + '%';
+
+  const up = ramp01(c, 3, 3.6) - ramp01(c, 5.2, 5.8);
+  horn.rotation.x = 0.9 * (1 - up) - 0.3 * up; // lowered at rest, raised slightly above level when sounded
+  horn.getWorldPosition(tmp);
+  rings.forEach((r, i) => {
+    const p = (c - 3.6 - i * 0.5) / 1.2;
+    const on = c > 3.6 && c < 5.4 && p > 0 && p < 1;
+    r.visible = on;
+    if (on) {
+      bellTip.getWorldPosition(r.position);
+      r.lookAt(tmp); r.position.lerp(tmp, -p * 1.6);
+      r.scale.setScalar(1 + p * 3); r.material.opacity = 1 - p;
+    }
+  });
+
+  const grow = ramp01(c, 6, 6.6), shrink = ramp01(c, 11.5, 12.1), vis = grow - shrink;
+  const fill = ramp01(c, 6.6, 12) - ramp01(c, 13, 15.5);
+  for (const s of streams) {
+    s.jet.visible = vis > 0.01;
+    s.jet.position.y = s.top - s.L * shrink;
+    s.jet.scale.y = Math.max(0.001, s.L * vis);
+    s.drops.forEach((d, i) => {
+      d.visible = vis > 0.99;
+      d.position.y = s.top - ((now * 1.2 + i / 4) % 1) * s.L;
+    });
+    s.level.visible = fill > 0.02;
+    s.level.position.y = 0.06 + fill * 0.26;
+  }
+
+  for (const f of fires) f.flames.forEach((m, i) => {
+    const k = 0.8 + 0.25 * Math.sin(now * (9 + i * 3) + f.seed) + 0.1 * Math.sin(now * 23 + i);
+    m.scale.set(1, k, 1); m.position.y = 0.72 + m.userData.h * k / 2;
+    f.light.intensity = 3.5 + Math.sin(now * 13 + f.seed) * 0.8;
+  });
+  { // cup-bearer: waits, climbs the west flight, presents the cup, descends the east flight
+    const DZ = -13.9, stepY = (z) => { const i = Math.floor((z - (DZ + 1.3)) / 0.45); return i < 0 ? 2.2 : i >= 5 ? 0 : 2.2 * (5 - i) / 5; };
+    const lerp = (a, b, t) => a + (b - a) * t;
+    let x = -1.5, z = -9.6, ry = Math.PI;
+    if (c > 11 && c < 13) { z = lerp(-9.6, -12.85, ramp01(c, 11, 13)); }
+    else if (c >= 13 && c < 14) { const t = ramp01(c, 13, 14); x = lerp(-1.5, 1.5, t); z = -12.85 - Math.sin(t * Math.PI) * 0.5; ry = Math.PI / 2; }
+    else if (c >= 14) { x = 1.5; z = lerp(-12.85, -9.6, ramp01(c, 14, 15.5)); ry = 0; }
+    cupBearer.position.set(x, FY + stepY(z), z); cupBearer.rotation.y = ry;
+  }
+  { // "Ha!": the attendant cries, the player strikes, all clap
+    const on = c > 13.2 && c < 14.4;
+    crier.getWorldPosition(tmp); tmp.y += 2.3; tmp.project(cam);
+    haEl.style.display = on ? 'block' : 'none';
+    haEl.style.left = (tmp.x + 1) / 2 * innerWidth + 'px'; haEl.style.top = (1 - tmp.y) / 2 * innerHeight + 'px';
+    crier.userData.arms[1].rotation.x = on ? -2.6 : 0;
+    player.userData.arms[0].rotation.x = -0.9 + (on ? Math.sin(now * 30) * 0.25 : 0);
+    for (const p of sitters) p.userData.arms.forEach((a, i) => {
+      a.rotation.x = on ? -1.2 : 0;
+      a.rotation.z = on ? (i ? -1 : 1) * (0.35 + 0.2 * Math.sin(now * 14)) : 0;
+    });
+  }
+  controls.update();
+  renderer.render(scene, cam);
+  if (loaderEl) { loaderEl.classList.add('done'); loaderEl = null; }
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
