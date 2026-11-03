@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no" class="notranslate">
 <head>
 <meta charset="utf-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"/>
 <meta name="description" content="A Three.js miniature diorama of the silver tree fountain in Möngke Khan’s palace at Karakorum, reconstructed from William of Rubruck’s 1254 eyewitness account.">
 <title>Karakorum Silver Tree</title>
@@ -206,7 +207,7 @@
     <li><b>Envoy of the Sultan of Turkia (Seljuks of Rum)</b>: brought rich presents. <span class="inf">The gift chest is schematic</span></li>
     <li><b>Rubruck and his companion Bartholomew</b>: Franciscans, barefoot and bareheaded, carrying the Bible and breviary</li>
     <li><b>Guests on the platforms</b>: the Khan’s sons and brothers on the west, wives and daughters on the east. <span class="inf">The cross-legged pose is inferred</span></li>
-    <li><b>The attendant who cries “Ha!” and the musician</b>: when the master begins to drink, an attendant cries “Ha!” and the player strikes his instrument; at great feasts everyone claps and dances to the music, men before the master, women before the mistress. When the master has drunk, the attendant cries again and the music stops. Rubruck adds that most of their instruments were “unknown among us”. <span class="inf">The text describes feasts in Mongol dwellings; placing this in the palace is inferred, and the instrument’s form is schematic</span></li>
+    <li><b>The attendant who cries “Uuhai!” and the musician</b>: when the master begins to drink, an attendant cries “Uuhai!” and the player strikes his instrument; at great feasts everyone claps and dances to the music, men before the master, women before the mistress. When the master has drunk, the attendant cries again and the music stops. Rubruck adds that most of their instruments were “unknown among us”. <span class="inf">The text describes feasts in Mongol dwellings; placing this in the palace is inferred, and the instrument’s form is schematic</span></li>
     <li><b>Door-keepers</b>: before an audience with Möngke, door-keepers searched visitors for knives; no one may touch the threshold going in or out</li>
     <li><b>Fabrics</b>: silks and cloth of gold were brought from Cathay (north China) and Persia and worn by Mongols in summer; robes fasten on the right. <span class="inf">Nobles’ robes are shown with a gold medallion pattern</span></li>
     <li><b>Knives and purses</b>: locals admired the knives, gloves, purses and belts of Rubruck’s servants; door-keepers searched for knives before audiences. <span class="inf">Mongols wearing knives at the belt is inferred</span></li>
@@ -313,7 +314,7 @@
   addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 })();
 </script>
-<div id="ha">Ha!</div>
+<div id="ha">Uuhai!</div>
 <canvas class="sky" id="glyphs" aria-hidden="true"></canvas>
 <script>
 // Waterfall of verse in the traditional Mongolian script, which is itself written in vertical columns, top to bottom.
@@ -1100,7 +1101,7 @@ hold(cupBearer);
 add(cupBearer, new THREE.CylinderGeometry(0.09, 0.06, 0.14, 10), C.gold, [0, cupBearer.userData.by + 0.16, 0.42]);
 add(cupBearer, box(0.04, 0.04, 0.04), gems[0], [0, cupBearer.userData.by + 0.17, 0.52]);
 
-// at the entry: an attendant who cries "Ha!" when the master drinks, and a player who strikes his instrument
+// at the entry: an attendant who cries "Uuhai!" when the master drinks, and a player who strikes his instrument
 const crier = place(person({ robe: 0x5a4a3a, trim: 0x2a2420, tone: 1 }), 3.4, FY, 1.9, Math.PI);
 const player = place(person({ robe: 0x4a3a5a, trim: 0xc8b890, tone: 3 }), -3.4, FY, 1.9, Math.PI);
 hold(player, -0.9, 0.35);
@@ -1164,7 +1165,7 @@ const CAPS = [
   [5.6, 'The man hidden in the vault blows hard into the pipe to the angel, who raises the trumpet to his mouth and sounds it loudly'],
   [12, 'Hearing it, servants in the cellar outside pour the four drinks into their conduits; the serpents pour wine, clarified mare’s milk, honey mead and rice wine'],
   [13.2, 'The butlers draw from the silver bowls; the cup-bearer climbs one flight of steps and offers the cup to the Khan'],
-  [14.4, 'As the Khan drinks, an attendant cries “Ha!”, the musician strikes his instrument and everyone claps'],
+  [14.4, 'As the Khan drinks, an attendant cries “Uuhai!”, the musician strikes his instrument and everyone claps'],
   [16, 'When the Khan has drunk, the attendant cries again and the music stops; the cup-bearer comes down the other flight and all drink in turn'],
 ];
 
@@ -1228,7 +1229,7 @@ function frame() {
     else if (c >= 14) { x = 1.5; z = lerp(-12.85, -9.6, ramp01(c, 14, 15.5)); ry = 0; }
     cupBearer.position.set(x, FY + stepY(z), z); cupBearer.rotation.y = ry;
   }
-  { // "Ha!": the attendant cries, the player strikes, all clap
+  { // "Uuhai!": the attendant cries, the player strikes, all clap
     const on = c > 13.2 && c < 14.4;
     crier.getWorldPosition(tmp); tmp.y += 2.3; tmp.project(cam);
     haEl.style.display = on ? 'block' : 'none';

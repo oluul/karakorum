@@ -2,7 +2,7 @@
 
 A Three.js miniature diorama of the silver tree fountain in Möngke Khan's palace at Karakorum, capital of the Mongol Empire, as described by the Franciscan friar William of Rubruck, who saw it in 1254.
 
-An angel on top of the tree sounds a trumpet, four gilded serpents pour wine, clarified mare's milk, honey mead and rice wine into silver bowls while silver lions sit at its roots, and a cup-bearer carries a cup up to the Khan while an attendant cries "Ha!" and a musician plays.
+An angel on top of the tree sounds a trumpet, four gilded serpents pour wine, clarified mare's milk, honey mead and rice wine into silver bowls while silver lions sit at its roots, and a cup-bearer carries a cup up to the Khan while an attendant cries "Uuhai!" and a musician plays.
 
 ## Run it
 
