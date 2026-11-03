@@ -9,7 +9,7 @@
   :root { --ink:#efe6d2; --mute:#a99b80; --gold:#e3b54a; --line:rgba(227,181,74,.24); --glass:rgba(22,16,12,.78);
     --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif; --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
     --edge:28px; --top:24px; --bottom:22px; }
-  html,body { margin:0; height:100%; color:var(--ink); font:14px/1.55 var(--sans); overflow:hidden; }
+  html,body { margin:0; height:100%; touch-action:manipulation; -webkit-text-size-adjust:100%; color:var(--ink); font:14px/1.55 var(--sans); overflow:hidden; }
   @font-face { font-family:"Onon Sonin Sans"; src:url(fonts/zg.ttf) format("truetype"); font-display:swap; }
   html { background:#15110e radial-gradient(ellipse at 50% 40%, #241b14 0%, #120e0b 75%) fixed; }
   .sky { position:fixed; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
@@ -25,11 +25,45 @@
   .title h1 { margin:4px 0 6px; font:400 clamp(28px,4vw,42px)/1.05 var(--serif); letter-spacing:-.01em; }
   .sub { margin:0; color:var(--mute); font:italic 15px/1.4 var(--serif); }
 
-  /* compact notes control: icon + short label, icon only on phones */
-  #toggle { position:fixed; top:var(--top); right:var(--edge); display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 13px 0 10px;
+  /* top-right utilities: compact pills, icon only on phones */
+  .actions { position:fixed; top:var(--top); right:var(--edge); display:flex; gap:8px; }
+  .pill { display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 13px 0 10px; box-sizing:border-box; color:var(--ink); text-decoration:none;
     font-size:13px; background:var(--glass); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid var(--line); border-radius:999px; transition:border-color .15s, background .15s; }
-  #toggle:hover { border-color:var(--gold); background:rgba(40,29,20,.9); }
-  #toggle svg { width:16px; height:16px; flex:none; stroke:var(--gold); }
+  .pill:hover { border-color:var(--gold); background:rgba(40,29,20,.9); }
+  .pill svg { width:16px; height:16px; flex:none; stroke:var(--gold); }
+  .pill svg.fill { fill:var(--gold); stroke:none; }
+
+  /* listen: the one invitation on the page, under the title */
+  .listen { pointer-events:auto; position:relative; display:inline-flex; align-items:center; gap:12px; margin-top:16px; padding:7px 18px 7px 7px; overflow:hidden;
+    color:var(--ink); text-align:left; background:rgba(28,20,14,.82); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    border:1px solid rgba(227,181,74,.45); border-radius:999px; box-shadow:0 6px 22px rgba(0,0,0,.35); text-shadow:none; transition:border-color .2s, transform .2s cubic-bezier(.2,.8,.2,1); }
+  .listen:hover { border-color:var(--gold); transform:translateY(-1px); }
+  .listen:active { transform:translateY(0) scale(.98); }
+  .disc { position:relative; display:grid; place-items:center; width:40px; height:40px; flex:none; border-radius:50%; background:var(--gold); color:#2a1d10; }
+  .disc svg { width:16px; height:16px; fill:currentColor; }
+  .disc .i-pause, .listen.playing .disc .i-play { display:none; }
+  .listen.playing .disc .i-pause { display:block; }
+  .disc::after { content:""; position:absolute; inset:-1px; border-radius:50%; border:1.5px solid var(--gold); opacity:0; animation:beckon 2.6s cubic-bezier(.2,.7,.3,1) 1.2s infinite; }
+  .listen.started .disc::after { animation:none; }
+  @keyframes beckon { 0% { transform:scale(1); opacity:.7; } 70%, 100% { transform:scale(1.7); opacity:0; } }
+  .lbl { display:grid; gap:1px; line-height:1.25; }
+  .lbl b { font:600 14px/1.25 var(--sans); letter-spacing:.005em; }
+  .lbl small { font-size:12px; color:var(--mute); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .lbl b { white-space:nowrap; }
+  .bars { display:flex; align-items:center; gap:3px; height:18px; margin-left:4px; }
+  .bars i { display:block; width:2.5px; height:100%; border-radius:2px; background:var(--gold); opacity:.55; transform:scaleY(.22); transform-origin:center; transition:transform .4s ease, opacity .4s; }
+  .listen.playing .bars i { opacity:.95; animation:voice 1.1s ease-in-out infinite alternate; }
+  .listen.playing .bars i:nth-child(2) { animation-delay:-.35s; animation-duration:.9s; }
+  .listen.playing .bars i:nth-child(3) { animation-delay:-.7s; animation-duration:1.25s; }
+  .listen.playing .bars i:nth-child(4) { animation-delay:-.15s; animation-duration:.8s; }
+  @keyframes voice { from { transform:scaleY(.25); } to { transform:scaleY(1); } }
+  .listen.loading .bars i { animation:voice .6s ease-in-out infinite alternate; opacity:.6; }
+  .track { position:absolute; left:56px; right:18px; bottom:6px; height:2px; border-radius:2px; background:rgba(239,230,210,.1); }
+  .track i { display:block; height:100%; width:0; border-radius:2px; background:var(--gold); }
+  .listen[disabled] { cursor:default; opacity:.6; transform:none; }
+  .listen[disabled] .disc { background:#6b5a3a; }
+  ::selection { background:rgba(227,181,74,.35); color:#fff; }
+  #notes { scrollbar-color:rgba(227,181,74,.35) transparent; scrollbar-width:thin; }
 
   /* drawer and scrim */
   #scrim { position:fixed; inset:0; background:rgba(8,6,4,.45); opacity:0; pointer-events:none; transition:opacity .25s; z-index:2; }
@@ -73,38 +107,54 @@
   .dots { display:flex; gap:7px; } .dots i { width:7px; height:7px; border-radius:50%; background:var(--gold); animation:pulse 1.2s ease-in-out infinite; }
   .dots i:nth-child(2) { animation-delay:.15s; } .dots i:nth-child(3) { animation-delay:.3s; }
   @keyframes pulse { 0%,100% { opacity:.25; transform:scale(.8); } 50% { opacity:1; transform:scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .dots i, .disc::after, .listen.playing .bars i, .listen.loading .bars i { animation:none; } .listen.playing .bars i { transform:scaleY(.7); } }
   @media (prefers-reduced-motion: reduce) { .dots i { animation:none; opacity:.8; } #notes, #scrim, #loader { transition:none; } }
 
   @media (max-width:760px) {
     :root { --edge:16px; --top:calc(14px + env(safe-area-inset-top)); --bottom:calc(12px + env(safe-area-inset-bottom)); }
     .sub, .hint { display:none; }
     .title h1 { font-size:30px; }
-    #toggle { width:40px; height:40px; padding:0; justify-content:center; }
-    #toggle span { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+    .pill { width:40px; height:40px; padding:0; justify-content:center; }
+    .pill span { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+    .listen { margin-top:12px; }
     #cap { font-size:14px; }
     #notes { width:100vw; border-left:0; padding-top:calc(20px + env(safe-area-inset-top)); padding-bottom:calc(28px + env(safe-area-inset-bottom)); }
   }
 </style>
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" href="fonts/OnonSoninSans.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js">
+<link rel="preload" href="fonts/zg.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="modulepreload" href="vendor/three/three.module.min.js">
 </head>
 <body>
 <header class="title">
   <p class="eyebrow">Karakorum · 1254</p>
   <h1>The Silver Tree</h1>
   <p class="sub">In Möngke Khan’s palace, after the eyewitness account of William of Rubruck</p>
+  <button id="listen" class="listen" type="button" aria-pressed="false" aria-label="Play the poem recitation">
+    <span class="disc" aria-hidden="true">
+      <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2z"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>
+    </span>
+    <span class="lbl"><b id="listen-title">Listen to the poem</b><small id="listen-meta">Recited in Mongolian · 3:43</small></span>
+    <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="track" aria-hidden="true"><i id="listen-progress"></i></span>
+  </button>
 </header>
-<button id="toggle" aria-expanded="false" aria-controls="notes" aria-label="Notes and sources">
-  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg>
-  <span>Notes</span>
-</button>
+<div class="actions">
+  <a class="pill" href="https://github.com/oluul/karakorum" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub">
+    <svg class="fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+    <span>GitHub</span>
+  </a>
+  <button id="toggle" class="pill" aria-expanded="false" aria-controls="notes" aria-label="Notes and sources">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg>
+    <span>Notes</span>
+  </button>
+</div>
 <div id="scrim"></div>
 <aside id="notes" aria-label="Notes and sources" inert>
   <div class="drawer-head"><h2>Notes &amp; sources</h2><button id="close" aria-label="Close notes">×</button></div>
@@ -176,12 +226,93 @@
     <li><a href="https://depts.washington.edu/silkroad/texts/rubruck.html" target="_blank" rel="noopener noreferrer">William of Rubruck, Journey (tr. Rockhill, 1900; with Jackson 1990 readings)</a></li>
     <li><a href="https://dainst.org/forschung/projekte/noslug/4924" target="_blank" rel="noopener noreferrer">DAI: Conservation and restoration of the “Great Hall of Karakorum”</a></li>
     <li><a href="https://www.dainst.blog/?p=7599" target="_blank" rel="noopener noreferrer">DAI: 800 years of Karakorum – 20 years of Mongolian-German excavations</a></li>
+    <li><a href="https://github.com/oluul/karakorum" target="_blank" rel="noopener noreferrer">This project’s source code on GitHub (MIT)</a></li>
     <li><a href="https://publicdomainreview.org/essay/the-khans-drinking-fountain" target="_blank" rel="noopener noreferrer">Public Domain Review: The Khan’s Drinking Fountain</a></li>
   </ul>
   </aside>
 <footer class="caption" aria-live="polite"><p id="step">&nbsp;</p><p id="cap">&nbsp;</p><div id="progress"><i></i></div></footer>
 <p class="hint">Drag to rotate · scroll to zoom</p>
 
+<script>
+// poem recitation: one button, fade in on play, progress and remaining time, clear error state
+(() => {
+  const btn = document.getElementById('listen'), title = document.getElementById('listen-title'),
+    meta = document.getElementById('listen-meta'), bar = document.getElementById('listen-progress');
+  const audio = new Audio('Tuuhiinshuleg_audio.m4a'); audio.preload = 'metadata';
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const set = (state) => {
+    btn.classList.toggle('playing', state === 'playing'); btn.classList.toggle('loading', state === 'loading');
+    btn.setAttribute('aria-pressed', String(state === 'playing' || state === 'loading'));
+    btn.setAttribute('aria-label', state === 'playing' ? 'Pause the poem recitation' : 'Play the poem recitation');
+    title.textContent = { playing: 'Now playing', loading: 'Loading…', paused: 'Resume the poem', ended: 'Listen again', idle: 'Listen to the poem' }[state];
+  };
+  // Sound goes element -> gain -> analyser -> speakers. Fades run on the audio clock, not on animation frames,
+  // so a hidden or throttled tab can never leave the volume stuck at zero; the element itself stays at full volume.
+  let actx = null, gain = null, analyser = null, wave = null;
+  const hookVoice = () => {
+    if (actx) return;
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback'; // iOS: play even with the ringer switch on silent
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      gain = actx.createGain(); analyser = actx.createAnalyser(); analyser.fftSize = 512; wave = new Uint8Array(analyser.fftSize);
+      actx.createMediaElementSource(audio).connect(gain).connect(analyser).connect(actx.destination);
+      // if the system suspends or interrupts the context mid-poem, bring it back rather than play silently
+      actx.addEventListener('statechange', () => { if (actx.state !== 'running' && !audio.paused) actx.resume().catch(() => {}); });
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && !audio.paused) actx.resume().catch(() => {}); });
+      window.karakorumVoice = () => {
+        if (audio.paused || actx.state !== 'running') return 0;
+        analyser.getByteTimeDomainData(wave);
+        let sum = 0; for (const b of wave) { const d = (b - 128) / 128; sum += d * d; }
+        return Math.min(1, Math.sqrt(sum / wave.length) * 7);
+      };
+    } catch { actx = null; } // without Web Audio the poem still plays at full volume, just without fades or the reacting script
+  };
+  const fadeTo = (v, sec) => {
+    if (!gain) return;
+    const t = actx.currentTime;
+    gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value, t); gain.gain.linearRampToValueAtTime(v, t + sec);
+  };
+  // toggle on what the listener asked for, not on audio.paused: during the short fade-out the element is still playing
+  let pauseTimer = 0, want = false;
+  btn.addEventListener('click', async () => {
+    btn.classList.add('started');
+    clearTimeout(pauseTimer);
+    want = !want;
+    if (want) {
+      hookVoice();
+      if (audio.ended) audio.currentTime = 0;
+      audio.volume = 1; set('loading');
+      try {
+        if (actx) { await actx.resume(); gain.gain.value = 0; }
+        await audio.play();
+        if (want) set('playing'); // a resume during the fade-out never fires 'playing' again
+        fadeTo(1, 1.2);
+      } catch { want = !audio.paused; set(audio.paused ? 'idle' : 'playing'); }
+    } else {
+      fadeTo(0, 0.25);
+      pauseTimer = setTimeout(() => audio.pause(), gain ? 260 : 0);
+    }
+  });
+  audio.addEventListener('playing', () => set('playing'));
+  audio.addEventListener('waiting', () => set('loading'));
+  audio.addEventListener('pause', () => { want = false; if (!audio.ended) set('paused'); });
+  audio.addEventListener('ended', () => { want = false; set('ended'); bar.style.width = '0%'; meta.textContent = `Recited in Mongolian · ${fmt(audio.duration)}`; });
+  audio.addEventListener('loadedmetadata', () => { meta.textContent = `Recited in Mongolian · ${fmt(audio.duration)}`; });
+  audio.addEventListener('timeupdate', () => {
+    if (!audio.duration) return;
+    bar.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+    if (!audio.paused) meta.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+  });
+  audio.addEventListener('error', () => {
+    btn.disabled = true; btn.classList.remove('playing', 'loading');
+    title.textContent = 'Recitation unavailable'; meta.textContent = 'The audio file could not be loaded';
+  });
+  if ('mediaSession' in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: 'Poem recitation', album: 'The Silver Tree of Karakorum' });
+  // no page zoom: block Safari's pinch gesture and trackpad ctrl-wheel zoom; the 3D view keeps its own pinch and scroll
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+})();
+</script>
 <div id="ha">Ha!</div>
 <canvas class="sky" id="glyphs" aria-hidden="true"></canvas>
 <script>
@@ -233,14 +364,22 @@
   ];
   const cv = document.getElementById('glyphs'), g = cv.getContext('2d');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const SIZE = 18, GAP = 38, FONT = `${SIZE}px "Onon Sonin Sans", "Noto Sans Mongolian", "Mongolian Baiti", serif`;
-  let w = 0, h = 0, cols = [], next = 0, seed = 11;
+  const FAMILY = `"Onon Sonin Sans", "Noto Sans Mongolian", "Mongolian Baiti", serif`;
+  // three depths: far lines are small, dim and slow; near lines are large, bright, few and glow like lit gold
+  const LAYERS = [
+    { size: 12, gap: 26, speed: [7, 13], alpha: [0.08, 0.16], glow: 0 },
+    { size: 18, gap: 42, speed: [16, 30], alpha: [0.22, 0.42], glow: 0 },
+    { size: 27, gap: 130, speed: [34, 52], alpha: [0.4, 0.62], glow: 14 },
+  ].map((L) => ({ ...L, font: `${L.size}px ${FAMILY}` }));
+  let w = 0, h = 0, cols = [], embers = [], next = 0, seed = 11, level = 0;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const lerp = ([a, b], t) => a + (b - a) * t;
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   function respawn(c, anywhere) {
+    const L = c.layer;
     c.text = LINES[next++ % LINES.length];
-    g.font = FONT; c.len = g.measureText(c.text).width;
-    c.speed = 16 + rnd() * 22; c.alpha = 0.22 + rnd() * 0.25;
+    g.font = L.font; c.len = g.measureText(c.text).width;
+    c.speed = lerp(L.speed, rnd()); c.alpha = lerp(L.alpha, rnd());
     c.end = 0.55 + rnd() * 0.3; // fraction of the screen height where this line dissolves
     // y is where the head (end of the line) is; on first layout start mid-fall so the screen is already full
     c.y = anywhere ? h * (0.15 + rnd() * (c.end - 0.2)) : -rnd() * h * 0.12;
@@ -249,35 +388,63 @@
   function layout() {
     const dpr = Math.min(devicePixelRatio || 1, 2);
     w = innerWidth; h = innerHeight; cv.width = w * dpr; cv.height = h * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cols = [];
-    for (let x = GAP / 2; x < w; x += GAP) { const c = { x: x + (rnd() - 0.5) * 8 }; respawn(c, true); cols.push(c); }
+    cols = []; embers = [];
+    for (const L of LAYERS) // far layers first, so nearer lines draw over them
+      for (let x = L.gap * (0.3 + rnd() * 0.5); x < w; x += L.gap) { const c = { layer: L, x: x + (rnd() - 0.5) * L.gap * 0.3 }; respawn(c, true); cols.push(c); }
+  }
+  function ember(x, y, big) {
+    if (embers.length > 420) return;
+    const life = 1.4 + rnd() * 2.2;
+    embers.push({ x, y, vx: (rnd() - 0.5) * 10, vy: -(8 + rnd() * 22), r: (big ? 1.1 : 0.6) + rnd() * 1.1, life, max: life, ph: rnd() * 6.3 });
   }
   function draw(dt) {
-    g.clearRect(0, 0, w, h); g.font = FONT; g.textBaseline = 'middle';
+    // the recitation, when playing, feeds its loudness in: the script brightens, quickens and sheds more embers with the voice
+    level += ((window.karakorumVoice ? window.karakorumVoice() : 0) - level) * 0.3;
+    const boost = 1 + level * 1.2, pace = 1 + level * 0.8;
+    g.clearRect(0, 0, w, h); g.textBaseline = 'middle';
+    let font = '';
     for (const c of cols) {
-      c.y += c.speed * dt;
+      const L = c.layer;
+      c.y += c.speed * pace * dt;
       const p = c.y / h, fadeIn = smooth(0, 0.12, p + c.len / h * 0.3), gone = smooth(c.end - 0.12, c.end + 0.08, p);
       if (gone >= 1) { respawn(c, false); continue; }
+      if (font !== L.font) g.font = font = L.font;
       // rotate a quarter turn clockwise so the horizontally shaped line runs down the column
       g.save(); g.translate(c.x, c.y - c.len); g.rotate(Math.PI / 2);
-      g.beginPath(); g.rect(-2, -SIZE, c.len + 4, SIZE * 2); g.clip();
-      const a = c.alpha * fadeIn;
+      const pad = L.size + L.glow * 2;
+      g.beginPath(); g.rect(-pad, -pad, c.len + pad * 2, pad * 2); g.clip();
+      const a = Math.min(1, c.alpha * fadeIn * boost);
       const grd = g.createLinearGradient(0, 0, c.len, 0); // older words above are dimmer, the newest word below is brightest
-      grd.addColorStop(0, `rgba(201,179,124,${a * 0.45})`);
+      grd.addColorStop(0, `rgba(201,179,124,${a * 0.4})`);
       grd.addColorStop(0.8, `rgba(214,188,128,${a})`);
-      grd.addColorStop(1, `rgba(245,212,130,${Math.min(1, a * 1.8)})`);
+      grd.addColorStop(1, `rgba(250,218,138,${Math.min(1, a * 1.8)})`);
+      if (L.glow) { g.shadowColor = `rgba(245,200,110,${0.55 + level * 0.45})`; g.shadowBlur = L.glow * (1 + level * 1.6); }
       g.globalAlpha = 1 - gone * 0.6; g.fillStyle = grd; g.fillText(c.text, 0, 0);
-      if (gone > 0) { // dissolve: specks eat the line away, from the top of the column downward, until nothing is left
+      g.shadowBlur = 0;
+      if (gone > 0) { // dissolve: specks eat the line away while it breaks into rising gold embers
         g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 1; g.fillStyle = '#000';
         for (const [u, v, r, when] of c.dust) {
           const k = smooth(when * 0.7 + (1 - u) * 0.25, when * 0.7 + (1 - u) * 0.25 + 0.25, gone);
           if (k <= 0) continue;
-          g.beginPath(); g.arc(u * c.len, v * SIZE * 0.6, r * k * 3.2, 0, Math.PI * 2); g.fill();
+          g.beginPath(); g.arc(u * c.len, v * L.size * 0.6, r * k * 3.2 * L.size / 18, 0, Math.PI * 2); g.fill();
         }
         g.globalCompositeOperation = 'source-over';
+        const n = (6 + 26 * level) * dt * (L.size / 18) * (L === LAYERS[0] ? 0.3 : 1) * (1 - gone);
+        for (let i = 0; i < n || rnd() < n - Math.floor(n); i++) ember(c.x + (rnd() - 0.5) * L.size * 0.5, c.y - rnd() * c.len, L.glow > 0);
       }
       g.restore();
     }
+    // embers: additive gold sparks that drift up and sway, then go out
+    g.globalCompositeOperation = 'lighter';
+    for (let i = embers.length - 1; i >= 0; i--) {
+      const e = embers[i];
+      e.life -= dt; if (e.life <= 0 || e.y < -10) { embers.splice(i, 1); continue; }
+      e.vy -= 5 * dt; e.x += (e.vx + Math.sin(e.life * 3 + e.ph) * 9) * dt; e.y += e.vy * dt;
+      const k = e.life / e.max, a = Math.min(1, k * 1.4) * (0.75 + level * 0.25);
+      g.fillStyle = `rgba(255,196,96,${a * 0.14})`; g.beginPath(); g.arc(e.x, e.y, e.r * 3.2, 0, Math.PI * 2); g.fill();
+      g.fillStyle = `rgba(255,226,150,${a * 0.85})`; g.beginPath(); g.arc(e.x, e.y, e.r, 0, Math.PI * 2); g.fill();
+    }
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
   }
   let last = performance.now(), acc = 0;
   function loop(now) {
@@ -286,13 +453,13 @@
     requestAnimationFrame(loop);
   }
   addEventListener('resize', () => { layout(); draw(0); });
-  document.fonts.load(FONT).catch(() => {}).finally(() => {
+  document.fonts.load(LAYERS[1].font).catch(() => {}).finally(() => {
     layout(); draw(0); if (!reduce) requestAnimationFrame(loop);
   });
 })();
 </script>
 <div id="loader" role="status"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><p>Casting the silver tree…</p></div>
-<script>setTimeout(() => { const l = document.getElementById('loader'); if (!l.classList.contains('done')) l.querySelector('p').textContent = 'Still loading… this page needs an internet connection for three.js.'; }, 12000);</script>
+<script>setTimeout(() => { const l = document.getElementById('loader'); if (!l.classList.contains('done')) l.querySelector('p').textContent = 'Still loading… if this persists, reload the page.'; }, 12000);</script>
 
 <script type="module">
 import * as THREE from 'three';
@@ -311,13 +478,39 @@ document.body.prepend(renderer.domElement);
 const scene = new THREE.Scene();
 const VIEW = 17;
 const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -100, 200);
-cam.position.set(-4, 12.9, 29.8); // low three-quarter view from the south-west, about 20° above the floor
-cam.zoom = innerWidth / innerHeight < 0.8 ? 2.2 : 1.2; // phones get a closer start on the tree
 const controls = new OrbitControls(cam, renderer.domElement);
-controls.target.set(0, 3.2, 3.4); // initial view centres on the silver tree
+controls.target.set(0, 1.8, -4.4); // the turntable turns about the centre of the round base
 controls.enableDamping = true;
-controls.autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches; controls.autoRotateSpeed = 0.35; // slow turntable, like a display piece
-controls.addEventListener('start', () => { controls.autoRotate = false; });
+// camera rig: an opening sweep down to a low three-quarter view from the south-west, then a turntable that
+// eases in whenever the visitor lets go, with a slow breath in elevation
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const HOME = { radius: 28.4, theta: Math.atan2(-4, 26.4), phi: Math.acos(9.7 / 28.4), zoom: innerWidth / innerHeight < 0.8 ? 1.55 : 0.95 };
+const camOff = new THREE.Vector3(), camSph = new THREE.Spherical();
+const placeCam = (theta, phi, zoom) => {
+  camOff.setFromSphericalCoords(HOME.radius, phi, theta); cam.position.copy(controls.target).add(camOff);
+  cam.zoom = zoom; cam.updateProjectionMatrix();
+};
+let rigIntro = !REDUCE, rigStart = performance.now() / 1000, rigLast = rigStart, rigTouch = -10, rigSpin = 0, rigBreath = 0;
+if (rigIntro) placeCam(HOME.theta - 1.1, 0.78, HOME.zoom * 0.62); else placeCam(HOME.theta, HOME.phi, HOME.zoom);
+controls.addEventListener('start', () => { rigTouch = Infinity; rigIntro = false; });
+controls.addEventListener('end', () => { rigTouch = performance.now() / 1000; });
+function rig(now) {
+  const dt = Math.min(0.1, now - rigLast); rigLast = now;
+  if (rigIntro) {
+    const k = Math.min(1, (now - rigStart) / 3.8), e = 1 - Math.pow(1 - k, 4);
+    placeCam(HOME.theta - 1.1 * (1 - e), 0.78 + (HOME.phi - 0.78) * e, HOME.zoom * (0.62 + 0.38 * e));
+    if (k >= 1) { rigIntro = false; rigTouch = now - 1; } // a short hold, then the turntable eases in
+    return;
+  }
+  if (REDUCE) return;
+  const idle = now - rigTouch > 2.5;
+  rigSpin += ((idle ? 0.45 : 0) - rigSpin) * Math.min(1, dt * 0.8);
+  controls.autoRotate = rigSpin > 0.002; controls.autoRotateSpeed = rigSpin;
+  const breath = Math.sin(now * 0.16) * 0.05 * Math.min(1, rigSpin / 0.45);
+  camOff.copy(cam.position).sub(controls.target); camSph.setFromVector3(camOff);
+  camSph.phi += breath - rigBreath; rigBreath = breath; camSph.makeSafe();
+  camOff.setFromSpherical(camSph); cam.position.copy(controls.target).add(camOff);
+}
 controls.maxPolarAngle = Math.PI * 0.47;
 controls.minZoom = 0.6; controls.maxZoom = 4;
 
@@ -1047,6 +1240,7 @@ function frame() {
       a.rotation.z = on ? (i ? -1 : 1) * (0.35 + 0.2 * Math.sin(now * 14)) : 0;
     });
   }
+  rig(now);
   controls.update();
   renderer.render(scene, cam);
   if (loaderEl) { loaderEl.classList.add('done'); loaderEl = null; }
