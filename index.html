@@ -33,6 +33,9 @@
   .pill:hover { border-color:var(--gold); background:rgba(40,29,20,.9); }
   .pill svg { width:16px; height:16px; flex:none; stroke:var(--gold); }
   .pill svg.fill { fill:var(--gold); stroke:none; }
+  .pill[hidden] { display:none; }
+  #fs .i-exit, #fs.on .i-enter { display:none; }
+  #fs.on .i-exit { display:block; }
 
   /* listen: the one invitation on the page, under the title */
   .listen { pointer-events:auto; position:relative; display:inline-flex; align-items:center; gap:12px; margin-top:16px; padding:7px 18px 7px 7px; overflow:hidden;
@@ -151,6 +154,11 @@
     <svg class="fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
     <span>GitHub</span>
   </a>
+  <button id="fs" class="pill" type="button" hidden aria-label="Enter full screen">
+    <svg class="i-enter" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    <svg class="i-exit" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+    <span>Full screen</span>
+  </button>
   <button id="toggle" class="pill" aria-expanded="false" aria-controls="notes" aria-label="Notes and sources">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg>
     <span>Notes</span>
@@ -323,45 +331,45 @@
 (() => {
   const NNBSP = ' ', MVS = '᠎';
   const LINES = [
-    "        ",
-"       ",
-"       ",
-"       ",
+    "        ",
+"       ",
+"       ",
+"       ",
 
-"        ",
+"        ",
 "      ",
 "      ",
-    "       ",
+    "       ",
 
-    "        ",
+    "        ",
     "      ",
-    "       ",
-    "       ",
+    "       ",
+    "       ",
 
     "       ",
     "        ",
-    "       ",
-    "       ",
+    "       ",
+    "       ",
 
-    "       ",
+    "       ",
     "      ",
-    "       ",
+    "       ",
     "      ",
 
-    "      ",
-    "      ",
+    "      ",
+    "      ",
     "      ",
     "     ",
 
-    "         ",
+    "         ",
     "       ",
-    "          ",
-    "           ",
+    "          ",
+    "           ",
 
-    "         ",
-    "        ",
+    "         ",
+    "        ",
     "       ",
-    "       ",
+    "       ",
   ];
   const cv = document.getElementById('glyphs'), g = cv.getContext('2d');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1155,20 +1163,34 @@ scene.traverse((o) => { if (o.isMesh && !(o.material.isMeshBasicMaterial)) o.cas
 // ---------- cycle: butler cries → trumpet → liquors poured → bowls fill → butlers draw ----------
 const PERIOD = 16;
 const t0 = performance.now() / 1000;
+const SPEED = 0.5; // the whole 16-unit loop plays at half speed (32 s), so each caption can be read
 const cap = document.getElementById('cap'), stepEl = document.getElementById('step'), bar = document.querySelector('#progress i');
 let loaderEl = document.getElementById('loader');
 const clamp = (v) => Math.min(1, Math.max(0, v));
 const ramp01 = (c, a, b) => clamp((c - a) / (b - a));
-const CAPS = [
-  [2, 'During the feast, the silver tree stands quietly inside the middle door'],
-  [3, 'When drink is wanted, the head butler calls to the angel to blow his trumpet'],
+const CAPS = [ // boundaries are in loop time (see SPEED): every step stays on screen for at least 3.5 s
+  [3, 'During the feast, when drink is wanted, the head butler calls to the angel to blow his trumpet'],
   [5.6, 'The man hidden in the vault blows hard into the pipe to the angel, who raises the trumpet to his mouth and sounds it loudly'],
   [12, 'Hearing it, servants in the cellar outside pour the four drinks into their conduits; the serpents pour wine, clarified mare’s milk, honey mead and rice wine'],
-  [13.2, 'The butlers draw from the silver bowls; the cup-bearer climbs one flight of steps and offers the cup to the Khan'],
-  [14.4, 'As the Khan drinks, an attendant cries “Uuhai!”, the musician strikes his instrument and everyone claps'],
+  [13.8, 'The butlers draw from the silver bowls and the cup-bearer climbs to the Khan, who drinks as an attendant cries “Uuhai!” and the music begins'],
   [16, 'When the Khan has drunk, the attendant cries again and the music stops; the cup-bearer comes down the other flight and all drink in turn'],
 ];
 
+// full screen: the button only exists where the browser can do it (not on iPhone Safari, which has no page full screen)
+{
+  const fs = document.getElementById('fs'), root = document.documentElement;
+  const can = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  const cur = () => document.fullscreenElement || document.webkitFullscreenElement;
+  if (can && root.requestFullscreen || can && root.webkitRequestFullscreen) {
+    fs.hidden = false;
+    const sync = () => { const on = !!cur(); fs.classList.toggle('on', on); fs.setAttribute('aria-label', on ? 'Exit full screen' : 'Enter full screen'); fs.querySelector('span').textContent = on ? 'Exit' : 'Full screen'; };
+    fs.onclick = () => {
+      if (cur()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+    };
+    document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync);
+  }
+}
 const notesEl = document.getElementById('notes'), toggleEl = document.getElementById('toggle'), scrimEl = document.getElementById('scrim');
 const setNotes = (open) => {
   notesEl.classList.toggle('open', open); scrimEl.classList.toggle('open', open); notesEl.inert = !open;
@@ -1182,7 +1204,7 @@ addEventListener('keydown', (e) => { if (e.key === 'Escape') setNotes(false); })
 
 const tmp = new THREE.Vector3(), haEl = document.getElementById('ha');
 function frame() {
-  const now = performance.now() / 1000, c = (now - t0) % PERIOD;
+  const now = performance.now() / 1000, c = ((now - t0) * SPEED) % PERIOD;
   const si = CAPS.findIndex(([end]) => c < end);
   if (cap.textContent !== CAPS[si][1]) { cap.textContent = CAPS[si][1]; stepEl.textContent = `Step ${si + 1} of ${CAPS.length}`; }
   bar.style.width = (c / PERIOD * 100).toFixed(1) + '%';
