@@ -1,0 +1,16 @@
+# The Silver Tree of Karakorum
+
+> An interactive 3D diorama of the silver tree fountain in Möngke Khan's palace at Karakorum, capital of the Mongol Empire, rebuilt from William of Rubruck's 1254 eyewitness account and the Mongolian-German excavations of Karakorum. Open source, MIT licence.
+
+## Facts
+
+- The silver tree was made for Möngke Khan by the Parisian goldsmith William (Guillaume Boucher) and stood inside the entrance of the palace.
+- Per Rubruck: four silver lions at the roots spouting white mare's milk; four conduits with gilded serpents pouring wine, clarified mare's milk, honey mead and rice wine into silver bowls; an angel with a trumpet on top, blown by a man hidden in a vault.
+- Ornament, faces, proportions and the cast of envoys are the author's inference; the on-page notes mark what is attested and what is inferred.
+
+## Links
+
+- [Live page](https://karakorum.hairhan.com/): the interactive diorama
+- [Source code and README](https://github.com/oluul/karakorum): sources, credits and licence
+- [Rubruck's account, Rockhill translation](https://depts.washington.edu/silkroad/texts/rubruck.html): primary source
+- [DAI: Great Hall of Karakorum](https://dainst.org/forschung/projekte/noslug/4924): excavation reference

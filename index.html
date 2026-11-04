@@ -4,8 +4,27 @@
 <meta charset="utf-8">
 <meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"/>
-<meta name="description" content="A Three.js miniature diorama of the silver tree fountain in Möngke Khan’s palace at Karakorum, reconstructed from William of Rubruck’s 1254 eyewitness account.">
-<title>Karakorum Silver Tree</title>
+<meta name="description" content="An interactive 3D diorama of the silver tree of Karakorum, the drinks fountain in Möngke Khan’s palace in the Mongol capital, rebuilt from William of Rubruck’s 1254 eyewitness account and the Karakorum excavations. Rotate it, watch the court, and hear a Mongolian poem.">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#15110e">
+<meta name="author" content="oluul">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://karakorum.hairhan.com/">
+<meta property="og:image" content="https://karakorum.hairhan.com/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The silver tree of Karakorum, a 3D diorama of the Mongol court with the Khan, envoys and a golden angel on top of the tree">
+<meta property="og:site_name" content="The Silver Tree of Karakorum">
+<meta property="og:title" content="The Silver Tree of Karakorum, 1254 · interactive 3D diorama">
+<meta property="og:description" content="An interactive 3D diorama of the silver tree of Karakorum, the drinks fountain in Möngke Khan’s palace in the Mongol capital, rebuilt from William of Rubruck’s 1254 eyewitness account and the Karakorum excavations. Rotate it, watch the court, and hear a Mongolian poem.">
+<meta property="og:locale" content="en">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://karakorum.hairhan.com/share.jpg">
+<meta name="twitter:title" content="The Silver Tree of Karakorum, 1254">
+<meta name="twitter:description" content="A 3D diorama of the Mongol court’s silver drinks fountain, rebuilt from a friar’s eyewitness account.">
+<link rel="canonical" href="https://karakorum.hairhan.com/">
+<link rel="license" href="LICENSE">
+<title>The Silver Tree of Karakorum, 1254 · 3D diorama of the Mongol court</title>
 <style>
   :root { --ink:#efe6d2; --mute:#a99b80; --gold:#e3b54a; --line:rgba(227,181,74,.24); --glass:rgba(22,16,12,.78);
     --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif; --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -13,6 +32,7 @@
   html,body { margin:0; height:100%; touch-action:manipulation; -webkit-text-size-adjust:100%; color:var(--ink); font:14px/1.55 var(--sans); overflow:hidden; }
   @font-face { font-family:"Onon Sonin Sans"; src:url(fonts/zg.ttf) format("truetype"); font-display:swap; }
   html { background:#15110e radial-gradient(ellipse at 50% 40%, #241b14 0%, #120e0b 75%) fixed; }
+  .about-text { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   .sky { position:fixed; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
 
   canvas { display:block; width:100vw; height:100vh; cursor:grab; }
@@ -133,6 +153,51 @@
 </script>
 <link rel="preload" href="fonts/zg.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="modulepreload" href="vendor/three/three.module.min.js">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "WebApplication",
+ "name": "The Silver Tree of Karakorum",
+ "alternateName": "Karakorum Silver Tree",
+ "description": "An interactive 3D diorama of the silver tree of Karakorum, the drinks fountain in Möngke Khan’s palace in the Mongol capital, rebuilt from William of Rubruck’s 1254 eyewitness account and the Karakorum excavations. Rotate it, watch the court, and hear a Mongolian poem.",
+ "applicationCategory": "EducationalApplication",
+ "operatingSystem": "Any (web browser with WebGL)",
+ "inLanguage": "en",
+ "isAccessibleForFree": true,
+ "license": "https://opensource.org/license/mit",
+ "url": "https://karakorum.hairhan.com/",
+ "image": "https://karakorum.hairhan.com/share.jpg",
+ "codeRepository": "https://github.com/oluul/karakorum",
+ "author": {
+  "@type": "Person",
+  "name": "oluul",
+  "url": "https://github.com/oluul"
+ },
+ "about": [
+  {
+   "@type": "Thing",
+   "name": "Karakorum",
+   "sameAs": "https://en.wikipedia.org/wiki/Karakorum"
+  },
+  {
+   "@type": "Thing",
+   "name": "William of Rubruck",
+   "sameAs": "https://en.wikipedia.org/wiki/William_of_Rubruck"
+  },
+  {
+   "@type": "Thing",
+   "name": "Möngke Khan",
+   "sameAs": "https://en.wikipedia.org/wiki/M%C3%B6ngke_Khan"
+  },
+  {
+   "@type": "Thing",
+   "name": "Silver tree of Karakorum",
+   "sameAs": "https://en.wikipedia.org/wiki/Guillaume_Boucher"
+  }
+ ],
+ "keywords": "Karakorum, silver tree, Mongol Empire, Möngke Khan, William of Rubruck, Guillaume Boucher, Three.js, 3D diorama, history"
+}
+</script>
 </head>
 <body>
 <header class="title">
@@ -467,9 +532,16 @@
   });
 })();
 </script>
+<section class="about-text" aria-label="About this page">
+  <h2>What is the silver tree of Karakorum?</h2>
+  <p>The silver tree was a large drinks fountain made of silver for Möngke Khan, the Great Khan of the Mongol Empire, by the Parisian goldsmith William (Guillaume Boucher), and set inside the entrance of the khan’s palace at Karakorum. The Franciscan friar William of Rubruck saw it in 1254 and described it in the account of his journey.</p>
+  <p>According to Rubruck, four silver lions at its roots spouted white mare’s milk. Four conduits ran up inside the tree and ended in bent-down tops, each wound by a gilded serpent, and poured wine, cara cosmos (clarified mare’s milk), bal (a honey drink) and terracina (rice mead) into silver bowls. An angel holding a trumpet stood at the top, blown by a man hidden in a vault beneath the tree. The tree also bore silver branches, leaves and fruit.</p>
+  <p>This page rebuilds the scene as an interactive 3D diorama. The hall layout, seating and court customs follow Rubruck; the floor tiles and column bases follow the Mongolian-German excavations of Karakorum’s “Great Hall”. Details the sources do not give, such as ornament, faces and proportions, are marked as inferred in the page’s notes. The background shows a stanza of “My Native Land” by Dashdorjiin Natsagdorj in the traditional Mongolian script. The source code is MIT-licensed at https://github.com/oluul/karakorum.</p>
+</section>
 <div id="loader" role="status"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><p>Casting the silver tree…</p></div>
 <script>setTimeout(() => { const l = document.getElementById('loader'); if (!l.classList.contains('done')) l.querySelector('p').textContent = 'Still loading… if this persists, reload the page.'; }, 12000);</script>
 
+<noscript><p style="position:fixed;inset:auto 16px 16px;margin:0;padding:12px;background:#15110e;color:#efe6d2">This diorama needs JavaScript and WebGL. It shows the silver tree fountain of Karakorum, as Rubruck described it in 1254.</p></noscript>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
